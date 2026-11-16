@@ -1,26 +1,41 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
 import { motion, useMotionValueEvent, useScroll, useTransform } from 'framer-motion'
+import { useEffect, useRef } from 'react'
 
-// ============================================
-// SETTINGS
-// ============================================
+// ======================================================
+// LUBRIX CINEMATIC FRAME ENGINE
+// ======================================================
 
 const TOTAL_FRAMES = 200
-const FRAME_PATH = '/med'
+const FRAME_PATH = '/med-avif'
+
+// Loading
 const MAX_CONCURRENT = 3
-const MAX_CACHE = 8
-const PREFETCH_AHEAD = 7
+const PREFETCH_AHEAD = 14
+const PREFETCH_BEHIND = 5
+
+// Memory
+
+const MAX_CACHE_DESKTOP = 8
+const MAX_CACHE_MOBILE = 5
+// Rendering
+const MAX_DPR = 1.5
+const MAX_CANVAS_PIXELS = 2560 * 1440
+
+// Scroll
+const SCROLL_EPSILON = 0.00001
+
+const clamp = (value, min, max) => Math.min(max, Math.max(min, value))
 
 const getFrameUrl = (index) => {
-  const frameNumber = String(index + 1).padStart(4, '0')
-  return `${FRAME_PATH}/frame-${frameNumber}.jpg`
+  const number = String(index + 1).padStart(4, '0')
+  return `${FRAME_PATH}/frame-${number}.avif`
 }
 
-// ============================================
-// FEATURES DATA
-// ============================================
+// ======================================================
+// FEATURES
+// ======================================================
 
 const features = [
   {
@@ -53,9 +68,9 @@ const features = [
   },
 ]
 
-// ============================================
+// ======================================================
 // ANIMATED FEATURE
-// ============================================
+// ======================================================
 
 function AnimatedFeature({ feature, index, progress }) {
   const start = index * 0.25
@@ -68,7 +83,7 @@ function AnimatedFeature({ feature, index, progress }) {
     bottom: { x: 0, y: 550 },
   }
 
-  const oppositeDirections = {
+  const opposites = {
     left: 'right',
     right: 'left',
     top: 'bottom',
@@ -77,7 +92,7 @@ function AnimatedFeature({ feature, index, progress }) {
 
   const direction = feature.direction
   const titleFrom = positions[direction]
-  const opposite = positions[oppositeDirections[direction]]
+  const opposite = positions[opposites[direction]]
 
   const titleX = useTransform(
     progress,
@@ -162,13 +177,18 @@ function AnimatedFeature({ feature, index, progress }) {
   const sectionOpacity = useTransform(
     progress,
     [Math.max(0, start - 0.015), start + 0.035, end - 0.045, end],
-    [0, 1, 1, 0]
+    index === 0 ? [1, 1, 1, 0] : [0, 1, 1, 0]
   )
 
   return (
     <motion.div
       style={{ opacity: sectionOpacity }}
-      className="absolute inset-0 flex items-center justify-center px-6 sm:px-10 md:px-16 lg:px-24 pointer-events-none"
+      className="
+        absolute inset-0
+        flex items-center justify-center
+        px-6 sm:px-10 md:px-16 lg:px-24
+        pointer-events-none
+      "
     >
       <div className="relative w-full max-w-[1400px]">
         {/* BACKGROUND NUMBER */}
@@ -181,15 +201,12 @@ function AnimatedFeature({ feature, index, progress }) {
           }}
           className="
             absolute -top-16 right-0
-            select-none
-            text-[150px]
-            font-semibold
-            leading-none
-            tracking-tighter
-            text-white/[0.045]
-            sm:-top-24 sm:text-[220px]
+            select-none pointer-events-none
+            text-[150px] sm:-top-24 sm:text-[220px]
             md:-top-40 md:text-[340px]
             lg:text-[380px]
+            font-semibold leading-none
+            tracking-tighter text-white/[0.045]
           "
         >
           {feature.number}
@@ -206,7 +223,10 @@ function AnimatedFeature({ feature, index, progress }) {
               y: subtitleY,
               opacity: subtitleOpacity,
             }}
-            className="mb-6 flex items-center gap-4 md:mb-8 md:gap-5"
+            className="
+              mb-6 flex items-center gap-4
+              md:mb-8 md:gap-5
+            "
           >
             <motion.div
               style={{
@@ -220,13 +240,9 @@ function AnimatedFeature({ feature, index, progress }) {
 
             <span
               className="
-                text-[9px]
-                font-medium
-                tracking-[0.3em]
-                text-white/75
-                sm:text-[10px]
-                md:text-xs
-                md:tracking-[0.4em]
+                text-[9px] sm:text-[10px] md:text-xs
+                font-medium tracking-[0.3em]
+                md:tracking-[0.4em] text-white/75
               "
             >
               {feature.subtitle}
@@ -245,10 +261,8 @@ function AnimatedFeature({ feature, index, progress }) {
             className="
               max-w-[1000px]
               text-[clamp(2.6rem,7vw,7rem)]
-              font-medium
-              leading-[0.98]
-              tracking-[-0.065em]
-              text-white
+              font-medium leading-[0.98]
+              tracking-[-0.065em] text-white
               will-change-transform
             "
           >
@@ -264,23 +278,16 @@ function AnimatedFeature({ feature, index, progress }) {
               opacity: textOpacity,
             }}
             className="
-              mt-8
-              flex flex-col gap-6
-              md:mt-14
-              md:flex-row
-              md:items-end
-              md:justify-between
+              mt-8 flex flex-col gap-6
+              md:mt-14 md:flex-row
+              md:items-end md:justify-between
             "
           >
             <p
               className="
-                max-w-[520px]
-                text-sm
-                leading-7
-                tracking-wide
-                text-white/70
-                sm:text-base
-                md:leading-8
+                max-w-[520px] text-sm
+                leading-7 tracking-wide text-white/70
+                sm:text-base md:leading-8
               "
             >
               {feature.text}
@@ -289,10 +296,8 @@ function AnimatedFeature({ feature, index, progress }) {
             <div
               className="
                 flex shrink-0 items-center gap-4
-                text-[10px]
-                tracking-[0.25em]
-                text-white/50
-                md:text-xs
+                text-[10px] tracking-[0.25em]
+                text-white/50 md:text-xs
               "
             >
               <span>{feature.number}</span>
@@ -306,13 +311,14 @@ function AnimatedFeature({ feature, index, progress }) {
   )
 }
 
-// ============================================
+// ======================================================
 // MAIN SECTION
-// ============================================
+// ======================================================
 
 export default function SectionThree() {
   const sectionRef = useRef(null)
   const canvasRef = useRef(null)
+
   const requestFramesRef = useRef(null)
 
   const { scrollYProgress } = useScroll({
@@ -320,327 +326,305 @@ export default function SectionThree() {
     offset: ['start start', 'end end'],
   })
 
-  // ============================================
-  // SMART FRAME LOADER
-  // ============================================
+  // ====================================================
+  // CINEMATIC FRAME ENGINE
+  // ====================================================
 
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
 
-    const ctx = canvas.getContext('2d', {
-      alpha: false,
-      desynchronized: true,
-    })
-
+    const ctx = canvas.getContext('2d', { alpha: false })
     if (!ctx) return
 
     let disposed = false
-    let activeLoads = 0
-    let targetIndex = 0
-    let lastDirection = 1
-    let drawRaf = null
+    let raf = null
     let resizeObserver = null
 
+    let targetIndex = 0
+    let displayedIndex = -1
+    let direction = 1
+
+    let width = 1
+    let height = 1
+
+    const MAX_CONCURRENT = 6
+    const MAX_CACHE = 32
+    const PREFETCH = 10
+
     const cache = new Map()
-    const loading = new Map()
+    const active = new Map()
+    const failed = new Set()
     const queue = new Map()
 
-    // ============================================
-    // CANVAS DRAWING
-    // ============================================
-
-    const drawImage = (img) => {
+    const draw = (img) => {
       if (!img || disposed) return
 
-      const canvasWidth = canvas.width
-      const canvasHeight = canvas.height
+      const iw = img.naturalWidth
+      const ih = img.naturalHeight
 
-      const imageWidth = img.naturalWidth
-      const imageHeight = img.naturalHeight
+      if (!iw || !ih) return
 
-      if (!imageWidth || !imageHeight) return
+      const scale = Math.max(width / iw, height / ih)
 
-      const scale = Math.max(canvasWidth / imageWidth, canvasHeight / imageHeight)
+      const dw = iw * scale
+      const dh = ih * scale
 
-      const width = imageWidth * scale
-      const height = imageHeight * scale
+      const x = (width - dw) / 2
+      const y = (height - dh) / 2
 
-      const x = (canvasWidth - width) / 2
-      const y = (canvasHeight - height) / 2
+      ctx.clearRect(0, 0, width, height)
+      ctx.drawImage(img, x, y, dw, dh)
 
-      ctx.clearRect(0, 0, canvasWidth, canvasHeight)
-      ctx.drawImage(img, x, y, width, height)
+      displayedIndex = Number(img.dataset.frameIndex)
     }
 
-    const drawNearestCached = () => {
-      if (cache.has(targetIndex)) {
-        drawImage(cache.get(targetIndex))
+    const drawNearest = (index) => {
+      if (cache.has(index)) {
+        const img = cache.get(index)
+        cache.delete(index)
+        cache.set(index, img)
+        draw(img)
         return
       }
 
-      let nearestImage = null
-      let nearestDistance = Infinity
+      let nearest = null
+      let minDistance = Infinity
 
-      for (const [index, img] of cache.entries()) {
-        const distance = Math.abs(index - targetIndex)
+      for (const [frameIndex, img] of cache) {
+        const distance = Math.abs(frameIndex - index)
 
-        if (distance < nearestDistance) {
-          nearestDistance = distance
-          nearestImage = img
+        if (distance < minDistance) {
+          minDistance = distance
+          nearest = img
         }
       }
 
-      if (nearestImage) drawImage(nearestImage)
+      if (nearest) draw(nearest)
     }
-
-    // ============================================
-    // CANVAS RESIZE
-    // ============================================
-
-    const resizeCanvas = () => {
-      if (disposed) return
-
-      const rect = canvas.getBoundingClientRect()
-
-      const dpr = Math.min(window.devicePixelRatio || 1, 1.5)
-
-      const width = Math.max(1, Math.round(rect.width * dpr))
-      const height = Math.max(1, Math.round(rect.height * dpr))
-
-      if (canvas.width !== width || canvas.height !== height) {
-        canvas.width = width
-        canvas.height = height
-        ctx.imageSmoothingEnabled = true
-        ctx.imageSmoothingQuality = 'high'
-        drawNearestCached()
-      }
-    }
-
-    resizeCanvas()
-
-    if ('ResizeObserver' in window) {
-      resizeObserver = new ResizeObserver(resizeCanvas)
-      resizeObserver.observe(canvas)
-    } else {
-      window.addEventListener('resize', resizeCanvas)
-    }
-
-    // ============================================
-    // CACHE MANAGEMENT
-    // ============================================
 
     const cleanCache = () => {
-      if (cache.size <= MAX_CACHE) return
+      while (cache.size > MAX_CACHE) {
+        let removed = false
 
-      const entries = [...cache.entries()].sort(
-        (a, b) => Math.abs(b[0] - targetIndex) - Math.abs(a[0] - targetIndex)
-      )
+        for (const [index] of cache) {
+          if (index === targetIndex || index === displayedIndex) continue
 
-      while (cache.size > MAX_CACHE && entries.length) {
-        const [index] = entries.shift()
-
-        if (index !== targetIndex) {
           cache.delete(index)
-        }
-      }
-    }
-
-    // ============================================
-    // LOAD QUEUE
-    // ============================================
-
-    const pumpQueue = () => {
-      if (disposed) return
-
-      while (activeLoads < MAX_CONCURRENT && queue.size > 0) {
-        const sorted = [...queue.entries()].sort((a, b) => a[1] - b[1])
-
-        const [index] = sorted[0]
-
-        queue.delete(index)
-
-        if (cache.has(index) || loading.has(index)) {
-          continue
+          removed = true
+          break
         }
 
-        loadFrame(index)
+        if (!removed) break
       }
     }
 
     const loadFrame = (index) => {
-      if (disposed || cache.has(index) || loading.has(index)) {
-        return
-      }
-
-      activeLoads++
+      if (disposed || cache.has(index) || active.has(index) || failed.has(index)) return
 
       const img = new Image()
       img.decoding = 'async'
+      img.dataset.frameIndex = String(index)
 
-      if ('fetchPriority' in img) {
-        img.fetchPriority = Math.abs(index - targetIndex) <= 1 ? 'high' : 'low'
-      }
+      active.set(index, img)
 
-      loading.set(index, img)
+      img.onload = () => {
+        if (disposed || active.get(index) !== img) return
 
-      img.onload = async () => {
-        try {
-          if (typeof img.decode === 'function') {
-            await img.decode()
-          }
-        } catch {
-          // Image is already available through onload.
-        }
-
-        if (disposed) return
-
-        loading.delete(index)
-        activeLoads--
+        active.delete(index)
 
         cache.set(index, img)
 
-        cleanCache()
-
-        // Draw exact frame when it becomes available.
         if (index === targetIndex) {
-          drawImage(img)
-        } else if (cache.size === 1) {
-          drawImage(img)
+          draw(img)
         }
 
-        pumpQueue()
+        cleanCache()
+        pump()
       }
 
       img.onerror = () => {
-        if (disposed) return
+        if (disposed || active.get(index) !== img) return
 
-        loading.delete(index)
-        activeLoads--
+        active.delete(index)
+        failed.add(index)
 
-        pumpQueue()
+        console.warn('Frame yuklanmadi:', getFrameUrl(index))
+
+        pump()
       }
 
       img.src = getFrameUrl(index)
     }
 
-    // ============================================
-    // REQUEST FRAMES AROUND SCROLL POSITION
-    // ============================================
+    const cancelFrame = (index) => {
+      const img = active.get(index)
+      if (!img) return
 
-    const updateFrames = (progress) => {
+      active.delete(index)
+
+      // Bekor qilingan yuklash onload/onerror chaqirmaydi.
+      img.onload = null
+      img.onerror = null
+      img.src = ''
+    }
+
+    const pump = () => {
       if (disposed) return
 
-      const safeProgress = Math.max(0, Math.min(1, progress))
+      while (active.size < MAX_CONCURRENT && queue.size > 0) {
+        const entries = [...queue.entries()].sort((a, b) => a[1] - b[1])
 
-      const nextIndex = Math.min(
-        TOTAL_FRAMES - 1,
-        Math.max(0, Math.round(safeProgress * (TOTAL_FRAMES - 1)))
-      )
+        const [index] = entries[0]
 
-      if (nextIndex > targetIndex) {
-        lastDirection = 1
-      } else if (nextIndex < targetIndex) {
-        lastDirection = -1
+        queue.delete(index)
+        loadFrame(index)
       }
+    }
 
-      targetIndex = nextIndex
+    const update = (progress) => {
+      if (disposed) return
 
-      // Keep the previous visible image while loading.
-      drawNearestCached()
+      const index = Math.round(clamp(progress, 0, 1) * (TOTAL_FRAMES - 1))
 
-      // Remove outdated requests that have not started.
+      if (index > targetIndex) direction = 1
+      else if (index < targetIndex) direction = -1
+
+      targetIndex = index
+
+      // Eng yaqin tayyor kadrni darhol ko'rsatamiz.
+      drawNearest(index)
+
+      // Eski navbatni butunlay yangilaymiz.
       queue.clear()
 
-      // Current frame gets the highest priority.
-      if (!cache.has(targetIndex) && !loading.has(targetIndex)) {
-        queue.set(targetIndex, 0)
-      }
+      // Scroll yo'nalishiga qarshi ketayotgan eski yuklashlarni bekor qilamiz.
+      for (const frameIndex of [...active.keys()]) {
+        const distance = (frameIndex - index) * direction
 
-      // Load frames in the scroll direction first.
-      for (let offset = 1; offset <= PREFETCH_AHEAD; offset++) {
-        const next = targetIndex + offset * lastDirection
-
-        if (next >= 0 && next < TOTAL_FRAMES && !cache.has(next) && !loading.has(next)) {
-          queue.set(next, offset)
+        if (frameIndex !== index && (distance < 0 || distance > 3)) {
+          cancelFrame(frameIndex)
         }
       }
 
-      // Keep a few frames behind for reverse scrolling.
-      for (let offset = 1; offset <= 2; offset++) {
-        const previous = targetIndex - offset * lastDirection
+      // Hozir kerak bo'lgan kadr eng yuqori ustuvorlikda.
+      if (!cache.has(index) && !active.has(index)) {
+        queue.set(index, -10000)
+      }
+
+      // Scroll yo'nalishida oldindan yuklash.
+      for (let i = 1; i <= PREFETCH; i++) {
+        const next = index + i * direction
+
+        if (
+          next >= 0 &&
+          next < TOTAL_FRAMES &&
+          !cache.has(next) &&
+          !active.has(next) &&
+          !failed.has(next)
+        ) {
+          queue.set(next, i)
+        }
+      }
+
+      // Orqaga qaytish uchun oz miqdorda kadr saqlash.
+      for (let i = 1; i <= 3; i++) {
+        const previous = index - i * direction
 
         if (
           previous >= 0 &&
           previous < TOTAL_FRAMES &&
           !cache.has(previous) &&
-          !loading.has(previous)
+          !active.has(previous) &&
+          !failed.has(previous)
         ) {
-          queue.set(previous, 10 + offset)
+          queue.set(previous, 100 + i)
         }
       }
 
-      pumpQueue()
+      pump()
     }
 
-    // ============================================
-    // RAF SCROLL UPDATE
-    // ============================================
+    const resize = () => {
+      if (disposed) return
+
+      const rect = canvas.getBoundingClientRect()
+      if (!rect.width || !rect.height) return
+
+      const dpr = Math.min(window.devicePixelRatio || 1, 1.5)
+
+      const newWidth = Math.round(rect.width * dpr)
+      const newHeight = Math.round(rect.height * dpr)
+
+      if (canvas.width === newWidth && canvas.height === newHeight) return
+
+      width = newWidth
+      height = newHeight
+
+      canvas.width = width
+      canvas.height = height
+
+      ctx.imageSmoothingEnabled = true
+      ctx.imageSmoothingQuality = 'high'
+
+      drawNearest(targetIndex)
+    }
 
     let pendingProgress = 0
 
     requestFramesRef.current = (progress) => {
       pendingProgress = progress
 
-      if (drawRaf !== null) return
+      if (raf !== null) return
 
-      drawRaf = requestAnimationFrame(() => {
-        drawRaf = null
-        updateFrames(pendingProgress)
+      raf = requestAnimationFrame(() => {
+        raf = null
+        update(pendingProgress)
       })
     }
 
-    // Load first frames immediately.
-    requestFramesRef.current(0)
+    resize()
+
+    if ('ResizeObserver' in window) {
+      resizeObserver = new ResizeObserver(resize)
+      resizeObserver.observe(canvas)
+    } else {
+      window.addEventListener('resize', resize)
+    }
+
+    update(0)
 
     return () => {
       disposed = true
 
-      if (drawRaf !== null) {
-        cancelAnimationFrame(drawRaf)
-      }
+      if (raf !== null) cancelAnimationFrame(raf)
 
-      if (resizeObserver) {
-        resizeObserver.disconnect()
-      } else {
-        window.removeEventListener('resize', resizeCanvas)
-      }
+      resizeObserver?.disconnect()
+      window.removeEventListener('resize', resize)
 
-      for (const img of loading.values()) {
-        img.onload = null
-        img.onerror = null
-        img.src = ''
+      for (const index of [...active.keys()]) {
+        cancelFrame(index)
       }
 
       cache.clear()
-      loading.clear()
       queue.clear()
+      failed.clear()
 
       requestFramesRef.current = null
     }
   }, [])
 
-  // ============================================
-  // SCROLL -> FRAME
-  // ============================================
+  // ====================================================
+  // SCROLL SYNCHRONIZATION
+  // ====================================================
 
   useMotionValueEvent(scrollYProgress, 'change', (progress) => {
     requestFramesRef.current?.(progress)
   })
 
-  // ============================================
+  // ====================================================
   // PROGRESS BAR
-  // ============================================
+  // ====================================================
 
   const progressWidth = useTransform(scrollYProgress, [0, 1], ['0%', '100%'])
 
@@ -649,26 +633,25 @@ export default function SectionThree() {
       ref={sectionRef}
       className="
         relative
-        h-[400vh]
+        h-[500vh]
         bg-[#080808]
         text-white
       "
     >
-      {/* STICKY CONTAINER */}
+      {/* STICKY CINEMATIC VIEWPORT */}
 
       <div
         className="
-          sticky
-          top-0
+          sticky top-0
           h-[100svh]
           min-h-[550px]
           w-full
           overflow-hidden
-          bg-[#080808]
           isolate
+          bg-[#080808]
         "
       >
-        {/* BACKGROUND CANVAS */}
+        {/* BACKGROUND FRAME CANVAS */}
 
         <canvas
           ref={canvasRef}
@@ -676,11 +659,10 @@ export default function SectionThree() {
           className="
             pointer-events-none
             absolute inset-0
-            h-full w-full
-            object-cover
+            block h-full w-full
           "
           style={{
-            filter: 'brightness(1.15) contrast(1.05) saturate(1.08)',
+            filter: 'brightness(1.12) contrast(1.06) saturate(1.08)',
             transform: 'translateZ(0)',
             willChange: 'transform',
           }}
@@ -722,6 +704,19 @@ export default function SectionThree() {
           "
         />
 
+        {/* TOP CINEMATIC SHADOW */}
+
+        <div
+          className="
+            pointer-events-none
+            absolute inset-x-0 top-0
+            h-32
+            bg-gradient-to-b
+            from-black/20
+            to-transparent
+          "
+        />
+
         {/* FEATURES */}
 
         {features.map((feature, index) => (
@@ -737,37 +732,28 @@ export default function SectionThree() {
 
         <div
           className="
-            absolute
-            bottom-7
-            left-6
-            right-6
-            z-30
-            flex
-            items-center
-            justify-between
+            absolute bottom-7
+            left-6 right-6 z-30
+            flex items-center justify-between
             sm:bottom-9
             md:bottom-12
-            md:left-16
-            md:right-16
+            md:left-16 md:right-16
           "
         >
           {/* BRAND + PROGRESS */}
 
           <div
             className="
-              flex
-              items-center
-              gap-3
+              flex items-center gap-3
               sm:gap-5
             "
           >
             <span
               className="
-                text-[10px]
+                text-[10px] sm:text-xs
                 font-semibold
                 tracking-[0.25em]
                 text-white/85
-                sm:text-xs
               "
             >
               LUBRIX
@@ -777,11 +763,9 @@ export default function SectionThree() {
               className="
                 relative
                 h-px
-                w-20
+                w-20 sm:w-28 md:w-40
                 overflow-hidden
                 bg-white/30
-                sm:w-28
-                md:w-40
               "
             >
               <motion.div
@@ -789,21 +773,17 @@ export default function SectionThree() {
                   width: progressWidth,
                 }}
                 className="
-                  absolute
-                  left-0
-                  top-0
-                  h-full
-                  bg-white
+                  absolute left-0 top-0
+                  h-full bg-white
                 "
               />
             </div>
 
             <span
               className="
-                text-[9px]
+                text-[9px] sm:text-[10px]
                 tracking-[0.2em]
                 text-white/60
-                sm:text-[10px]
               "
             >
               EXPERIENCE
@@ -822,10 +802,9 @@ export default function SectionThree() {
               ease: 'easeInOut',
             }}
             className="
-              text-[10px]
+              text-[10px] sm:text-xs
               tracking-[0.3em]
               text-white/65
-              sm:text-xs
             "
           >
             SCROLL
