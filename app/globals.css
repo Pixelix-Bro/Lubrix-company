@@ -1,0 +1,21 @@
+@import 'tailwindcss';
+
+@font-face {
+  font-family: 'Michroma';
+  src: url('../font/Michroma/Michroma-Regular.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+:root {
+  --font-michroma: 'Michroma', sans-serif;
+}
+
+body {
+  font-family: var(--font-michroma);
+}
+
+::-webkit-scrollbar {
+  display: none;
+}
