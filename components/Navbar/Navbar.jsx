@@ -57,7 +57,6 @@ export default function Navbar() {
         `}
         style={{ height: active ? 76 : 82 }}
       >
-        {/* GLASS BACKGROUND */}
         <GlassSurface
           width="100%"
           height="100%"
@@ -119,7 +118,7 @@ export default function Navbar() {
 
           {/* BUTTONS */}
           <div className="relative z-20 flex shrink-0 items-center gap-3">
-            <Link target="_blank" href="https://lubrix-ssr.vercel.app/login">
+            <Link target="_blank" href="https://lubrix.uz/login">
               <SpecularButton
                 size="sm"
                 radius={40}
@@ -141,7 +140,7 @@ export default function Navbar() {
               </SpecularButton>
             </Link>
 
-            <Link target="_blank" href="https://lubrix-ssr.vercel.app/plans">
+            <Link target="_blank" href="https://lubrix.uz/plans">
               <SpecularButton
                 size="sm"
                 radius={40}
