@@ -73,7 +73,6 @@ export const metadata = {
     },
   },
 
-
   openGraph: {
     type: 'website',
     locale: 'uz_UZ',
@@ -96,7 +95,6 @@ export const metadata = {
     ],
   },
 
-
   twitter: {
     card: 'summary_large_image',
 
@@ -111,21 +109,20 @@ export const metadata = {
   icons: {
     icon: [
       {
-        url: '/favicon.png',
+        url: '/fovicon.png',
         type: 'image/png',
       },
     ],
 
-    shortcut: '/favicon.png',
+    shortcut: '/fovicon.png',
 
     apple: [
       {
-        url: '/favicon.png',
+        url: '/fovicon.png',
         type: 'image/png',
       },
     ],
   },
-
 
   manifest: '/site.webmanifest',
 
@@ -143,13 +140,11 @@ export const metadata = {
     },
   },
 
-
   appleWebApp: {
     capable: true,
     title: 'Lubrix',
     statusBarStyle: 'black-translucent',
   },
-
 
   formatDetection: {
     telephone: false,
@@ -157,7 +152,6 @@ export const metadata = {
     address: false,
     email: false,
   },
-
 
   referrer: 'strict-origin-when-cross-origin',
 }
