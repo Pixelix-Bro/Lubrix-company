@@ -1,30 +1,57 @@
 'use client'
 
 import { motion, useMotionValueEvent, useScroll, useTransform } from 'framer-motion'
-
 import { useEffect, useRef } from 'react'
 
 // ======================================================
-// LUBRIX CINEMATIC FRAME ENGINE
+// LUBRIX — CINEMATIC FRAME ENGINE PRO v2
 // ======================================================
 
-// FRAMES
+// FRAME CONFIGURATION
+
 const TOTAL_FRAMES = 200
 const FRAME_PATH = '/med-avif'
 
-// MAIN ENGINE
-const MAX_CONCURRENT = 6
-const MAX_CACHE = 32
-const PREFETCH_AHEAD = 14
-const PREFETCH_BEHIND = 5
+// SMOOTHNESS
+// Higher = frames catch up to scroll faster.
+// Lower = softer, more "light" motion.
+const SCROLL_SMOOTHING = 10
 
-// BACKGROUND PRELOADER
-const PRELOAD_CONCURRENCY = 4
-const PRELOAD_START_FRAME = 1
+// Crossfade between neighbouring frames for seamless motion.
+// Set to false on very weak devices to halve draw cost.
+const BLEND_FRAMES = true
 
-// RENDERING
+// CANVAS QUALITY
+
 const MAX_DPR = 1.5
+const LOW_MEMORY_DPR = 1.25
 const MAX_CANVAS_PIXELS = 2560 * 1440
+
+const BACKGROUND_COLOR = '#080808'
+
+// LOADING
+
+const RETRY_DELAY = 800
+const MAX_RETRIES = 3
+
+const DEVICE_TIERS = {
+  high: {
+    fetchConcurrency: 6,
+    decodeConcurrency: 3,
+    ahead: 20,
+    behind: 8,
+    maxBitmaps: 40,
+    maxDpr: MAX_DPR,
+  },
+  low: {
+    fetchConcurrency: 3,
+    decodeConcurrency: 1,
+    ahead: 12,
+    behind: 6,
+    maxBitmaps: 22,
+    maxDpr: LOW_MEMORY_DPR,
+  },
+}
 
 // ======================================================
 // UTILITIES
@@ -34,7 +61,17 @@ const clamp = (value, min, max) => Math.min(max, Math.max(min, value))
 
 const getFrameUrl = (index) => {
   const number = String(index + 1).padStart(4, '0')
+
   return `${FRAME_PATH}/frame-${number}.avif`
+}
+
+const getDeviceTier = () => {
+  if (typeof navigator === 'undefined') return DEVICE_TIERS.high
+
+  const memory = navigator.deviceMemory || 8
+  const cores = navigator.hardwareConcurrency || 8
+
+  return memory <= 4 || cores <= 4 ? DEVICE_TIERS.low : DEVICE_TIERS.high
 }
 
 // ======================================================
@@ -95,6 +132,7 @@ function AnimatedFeature({ feature, index, progress }) {
   }
 
   const direction = feature.direction
+
   const titleFrom = positions[direction]
   const opposite = positions[opposites[direction]]
 
@@ -188,10 +226,10 @@ function AnimatedFeature({ feature, index, progress }) {
     <motion.div
       style={{ opacity: sectionOpacity }}
       className="
+        pointer-events-none
         absolute inset-0
         flex items-center justify-center
         px-6 sm:px-10 md:px-16 lg:px-24
-        pointer-events-none
       "
     >
       <div className="relative w-full max-w-[1400px]">
@@ -204,8 +242,9 @@ function AnimatedFeature({ feature, index, progress }) {
             opacity: numberOpacity,
           }}
           className="
+            pointer-events-none
             absolute -top-16 right-0
-            select-none pointer-events-none
+            select-none
             text-[150px] sm:-top-24 sm:text-[220px]
             md:-top-40 md:text-[340px]
             lg:text-[380px]
@@ -246,7 +285,8 @@ function AnimatedFeature({ feature, index, progress }) {
               className="
                 text-[9px] sm:text-[10px] md:text-xs
                 font-medium tracking-[0.3em]
-                md:tracking-[0.4em] text-white/75
+                md:tracking-[0.4em]
+                text-white/75
               "
             >
               {feature.subtitle}
@@ -290,7 +330,8 @@ function AnimatedFeature({ feature, index, progress }) {
             <p
               className="
                 max-w-[520px] text-sm
-                leading-7 tracking-wide text-white/70
+                leading-7 tracking-wide
+                text-white/70
                 sm:text-base md:leading-8
               "
             >
@@ -305,7 +346,9 @@ function AnimatedFeature({ feature, index, progress }) {
               "
             >
               <span>{feature.number}</span>
+
               <div className="h-px w-12 bg-white/35 md:w-16" />
+
               <span>04</span>
             </div>
           </motion.div>
@@ -316,13 +359,406 @@ function AnimatedFeature({ feature, index, progress }) {
 }
 
 // ======================================================
+// FRAME ENGINE
+// ======================================================
+
+function createFrameEngine(canvas) {
+  const ctx = canvas.getContext('2d', { alpha: false })
+
+  if (!ctx) return null
+
+  const tier = getDeviceTier()
+  const abort = new AbortController()
+
+  // blobs:   compressed frames, downloaded once and kept for instant re-decoding
+  // bitmaps: decoded frames ready to draw, limited by memory budget
+  const blobs = new Map()
+  const bitmaps = new Map()
+  const loading = new Set()
+  const decoding = new Set()
+  const retries = new Map()
+
+  let disposed = false
+  let resizeObserver = null
+
+  let width = 0
+  let height = 0
+
+  let target = 0 // where scroll wants us to be (0 .. TOTAL_FRAMES - 1)
+  let pos = 0 // where we visually are (smoothed)
+  let dir = 1 // motion direction: 1 forward, -1 backward
+  let dirty = true
+  let rafId = null
+  let lastTime = 0
+
+  const isValid = (i) => Number.isInteger(i) && i >= 0 && i < TOTAL_FRAMES
+
+  const inWindow = (i, center) => {
+    const rel = (i - center) * dir
+
+    return rel >= -tier.behind && rel <= tier.ahead
+  }
+
+  // ----------------------------------------------------
+  // DRAWING
+  // ----------------------------------------------------
+
+  const drawCover = (bitmap, alpha) => {
+    const scale = Math.max(width / bitmap.width, height / bitmap.height)
+    const drawWidth = bitmap.width * scale
+    const drawHeight = bitmap.height * scale
+
+    ctx.globalAlpha = alpha
+    ctx.drawImage(
+      bitmap,
+      (width - drawWidth) * 0.5,
+      (height - drawHeight) * 0.5,
+      drawWidth,
+      drawHeight
+    )
+  }
+
+  // Finds the closest decoded frame, so the screen is never empty or stale
+  const nearestBitmap = (center) => {
+    for (let d = 0; d < TOTAL_FRAMES; d++) {
+      const forward = center + d * dir
+
+      if (bitmaps.has(forward)) return forward
+
+      const backward = center - d * dir
+
+      if (d > 0 && bitmaps.has(backward)) return backward
+    }
+
+    return -1
+  }
+
+  const render = () => {
+    if (!width || !height) return
+
+    const base = Math.floor(pos)
+    const fraction = pos - base
+
+    const lower = bitmaps.get(base)
+    const upper = bitmaps.get(base + 1)
+
+    if (BLEND_FRAMES && lower && upper) {
+      drawCover(lower, 1)
+
+      if (fraction > 0.002) {
+        drawCover(upper, fraction)
+      }
+    } else {
+      const index = nearestBitmap(BLEND_FRAMES ? base : Math.round(pos))
+
+      if (index === -1) {
+        ctx.globalAlpha = 1
+        ctx.fillStyle = BACKGROUND_COLOR
+        ctx.fillRect(0, 0, width, height)
+      } else {
+        drawCover(bitmaps.get(index), 1)
+      }
+    }
+
+    ctx.globalAlpha = 1
+  }
+
+  // ----------------------------------------------------
+  // LOADING
+  // ----------------------------------------------------
+
+  const canRetry = (i) => {
+    const record = retries.get(i)
+
+    return !record || (record.count < MAX_RETRIES && performance.now() >= record.at)
+  }
+
+  const markFailed = (i) => {
+    const count = (retries.get(i)?.count || 0) + 1
+    const delay = RETRY_DELAY * count
+
+    retries.set(i, { count, at: performance.now() + delay })
+
+    if (count < MAX_RETRIES) {
+      setTimeout(() => {
+        if (!disposed) pump()
+      }, delay)
+    }
+  }
+
+  const fetchFrame = async (i) => {
+    loading.add(i)
+
+    try {
+      const response = await fetch(getFrameUrl(i), {
+        cache: 'force-cache',
+        credentials: 'same-origin',
+        signal: abort.signal,
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`)
+      }
+
+      const blob = await response.blob()
+
+      if (!disposed) {
+        blobs.set(i, blob)
+      }
+    } catch (error) {
+      if (!disposed && error.name !== 'AbortError') {
+        console.warn('LUBRIX FRAME LOAD ERROR:', getFrameUrl(i), error)
+        markFailed(i)
+      }
+    } finally {
+      loading.delete(i)
+
+      if (!disposed) pump()
+    }
+  }
+
+  // ----------------------------------------------------
+  // DECODING
+  // ----------------------------------------------------
+
+  const trimBitmaps = () => {
+    if (bitmaps.size <= tier.maxBitmaps) return
+
+    const center = Math.round(pos)
+
+    // Evict the frames farthest from the playhead first
+    const farthestFirst = [...bitmaps.keys()].sort(
+      (a, b) => Math.abs(b - center) - Math.abs(a - center)
+    )
+
+    while (bitmaps.size > tier.maxBitmaps) {
+      const index = farthestFirst.shift()
+
+      bitmaps.get(index)?.close?.()
+      bitmaps.delete(index)
+    }
+  }
+
+  const decodeFrame = async (i) => {
+    decoding.add(i)
+
+    try {
+      const bitmap = await createImageBitmap(blobs.get(i))
+
+      if (disposed) {
+        bitmap.close?.()
+        return
+      }
+
+      bitmaps.set(i, bitmap)
+      trimBitmaps()
+
+      dirty = true
+      schedule()
+    } catch (error) {
+      if (!disposed) {
+        console.warn('LUBRIX FRAME DECODE ERROR:', getFrameUrl(i), error)
+
+        blobs.delete(i)
+        markFailed(i)
+      }
+    } finally {
+      decoding.delete(i)
+
+      if (!disposed) pump()
+    }
+  }
+
+  // ----------------------------------------------------
+  // PRIORITY PUMP
+  // Nearest frames to the playhead are always handled first.
+  // Every frame is eventually downloaded in the background,
+  // so fast scrolling never has to wait for the network.
+  // ----------------------------------------------------
+
+  const pump = () => {
+    if (disposed) return
+
+    const center = Math.round(pos)
+
+    let fetchSlots = tier.fetchConcurrency - loading.size
+    let decodeSlots = tier.decodeConcurrency - decoding.size
+
+    for (let d = 0; d < TOTAL_FRAMES && (fetchSlots > 0 || decodeSlots > 0); d++) {
+      const candidates = d === 0 ? [center] : [center + d * dir, center - d * dir]
+
+      for (const i of candidates) {
+        if (!isValid(i)) continue
+
+        if (fetchSlots > 0 && !blobs.has(i) && !loading.has(i) && canRetry(i)) {
+          fetchSlots--
+          fetchFrame(i)
+        } else if (
+          decodeSlots > 0 &&
+          blobs.has(i) &&
+          !bitmaps.has(i) &&
+          !decoding.has(i) &&
+          inWindow(i, center)
+        ) {
+          decodeSlots--
+          decodeFrame(i)
+        }
+      }
+    }
+  }
+
+  // ----------------------------------------------------
+  // ANIMATION LOOP
+  // Runs only while something is moving or changing.
+  // ----------------------------------------------------
+
+  const schedule = () => {
+    if (rafId === null && !disposed) {
+      rafId = requestAnimationFrame(tick)
+    }
+  }
+
+  const tick = (now) => {
+    rafId = null
+
+    if (disposed) return
+
+    // Frame-rate independent smoothing
+    const dt = lastTime ? Math.min((now - lastTime) / 1000, 0.05) : 1 / 60
+    lastTime = now
+
+    const diff = target - pos
+
+    if (Math.abs(diff) > 0.0005) {
+      pos += diff * (1 - Math.exp(-SCROLL_SMOOTHING * dt))
+      dirty = true
+    } else if (diff !== 0) {
+      pos = target
+      dirty = true
+    }
+
+    pump()
+
+    if (dirty) {
+      dirty = false
+      render()
+    }
+
+    if (pos !== target) {
+      rafId = requestAnimationFrame(tick)
+    } else {
+      lastTime = 0
+    }
+  }
+
+  // ----------------------------------------------------
+  // PUBLIC API
+  // ----------------------------------------------------
+
+  const setProgress = (progress, snap = false) => {
+    if (disposed) return
+
+    const next = clamp(progress, 0, 1) * (TOTAL_FRAMES - 1)
+
+    if (next > target) dir = 1
+    else if (next < target) dir = -1
+
+    target = next
+
+    if (snap) pos = next
+
+    dirty = true
+    schedule()
+  }
+
+  // ----------------------------------------------------
+  // CANVAS RESOLUTION
+  // ----------------------------------------------------
+
+  const resize = () => {
+    if (disposed) return
+
+    const rect = canvas.getBoundingClientRect()
+
+    if (!rect.width || !rect.height) return
+
+    const dpr = Math.min(
+      window.devicePixelRatio || 1,
+      tier.maxDpr,
+      Math.sqrt(MAX_CANVAS_PIXELS / (rect.width * rect.height))
+    )
+
+    const nextWidth = Math.max(1, Math.round(rect.width * dpr))
+    const nextHeight = Math.max(1, Math.round(rect.height * dpr))
+
+    if (nextWidth === width && nextHeight === height) return
+
+    width = nextWidth
+    height = nextHeight
+
+    // Changing canvas size clears its pixels, so we redraw
+    canvas.width = width
+    canvas.height = height
+
+    ctx.imageSmoothingEnabled = true
+    ctx.imageSmoothingQuality = 'medium'
+
+    dirty = true
+    schedule()
+  }
+
+  // ----------------------------------------------------
+  // CLEANUP
+  // ----------------------------------------------------
+
+  const destroy = () => {
+    disposed = true
+
+    if (rafId !== null) cancelAnimationFrame(rafId)
+
+    resizeObserver?.disconnect()
+    window.removeEventListener('resize', resize)
+
+    abort.abort()
+
+    for (const bitmap of bitmaps.values()) {
+      bitmap.close?.()
+    }
+
+    bitmaps.clear()
+    blobs.clear()
+    loading.clear()
+    decoding.clear()
+    retries.clear()
+  }
+
+  // ----------------------------------------------------
+  // INITIALIZATION
+  // ----------------------------------------------------
+
+  resize()
+
+  if ('ResizeObserver' in window) {
+    resizeObserver = new ResizeObserver(resize)
+    resizeObserver.observe(canvas)
+  } else {
+    window.addEventListener('resize', resize)
+  }
+
+  // Start background loading immediately
+  pump()
+
+  return { setProgress, destroy }
+}
+
+// ======================================================
 // MAIN SECTION
 // ======================================================
 
 export default function SectionThree() {
   const sectionRef = useRef(null)
   const canvasRef = useRef(null)
-  const requestFramesRef = useRef(null)
+  const engineRef = useRef(null)
 
   const { scrollYProgress } = useScroll({
     target: sectionRef,
@@ -330,7 +766,7 @@ export default function SectionThree() {
   })
 
   // ====================================================
-  // CINEMATIC ENGINE + FULL BACKGROUND PRELOADER
+  // ENGINE LIFECYCLE
   // ====================================================
 
   useEffect(() => {
@@ -338,441 +774,31 @@ export default function SectionThree() {
 
     if (!canvas) return
 
-    const ctx = canvas.getContext('2d', {
-      alpha: false,
-      desynchronized: true,
-    })
+    const engine = createFrameEngine(canvas)
 
-    if (!ctx) return
+    if (!engine) return
 
-    let disposed = false
-    let raf = null
-    let resizeObserver = null
+    engineRef.current = engine
 
-    let targetIndex = 0
-    let displayedIndex = -1
-    let direction = 1
-
-    let width = 1
-    let height = 1
-
-    // FRAME STORAGE
-
-    const cache = new Map()
-    const active = new Map()
-    const failed = new Set()
-    const queue = new Map()
-
-    // BACKGROUND PRELOAD CONTROL
-
-    const preloadController = new AbortController()
-
-    let preloadStopped = false
-    let preloadCompleted = 0
-    let preloadFailed = 0
-
-    // ==================================================
-    // DRAW FRAME
-    // ==================================================
-
-    const draw = (img) => {
-      if (!img || disposed) return
-
-      const iw = img.naturalWidth
-      const ih = img.naturalHeight
-
-      if (!iw || !ih) return
-
-      const scale = Math.max(width / iw, height / ih)
-
-      const dw = iw * scale
-      const dh = ih * scale
-
-      const x = (width - dw) / 2
-      const y = (height - dh) / 2
-
-      ctx.clearRect(0, 0, width, height)
-      ctx.drawImage(img, x, y, dw, dh)
-
-      displayedIndex = Number(img.dataset.frameIndex)
-    }
-
-    // ==================================================
-    // NEAREST FRAME
-    // ==================================================
-
-    const drawNearest = (index) => {
-      if (cache.has(index)) {
-        const img = cache.get(index)
-
-        cache.delete(index)
-        cache.set(index, img)
-
-        draw(img)
-        return
-      }
-
-      let nearest = null
-      let minDistance = Infinity
-
-      for (const [frameIndex, img] of cache) {
-        const distance = Math.abs(frameIndex - index)
-
-        if (distance < minDistance) {
-          minDistance = distance
-          nearest = img
-        }
-      }
-
-      if (nearest) draw(nearest)
-    }
-
-    // ==================================================
-    // CACHE CLEANUP
-    // ==================================================
-
-    const cleanCache = () => {
-      while (cache.size > MAX_CACHE) {
-        let removed = false
-
-        for (const [index] of cache) {
-          if (index === targetIndex || index === displayedIndex) {
-            continue
-          }
-
-          cache.delete(index)
-          removed = true
-          break
-        }
-
-        if (!removed) break
-      }
-    }
-
-    // ==================================================
-    // FRAME LOADER
-    // ==================================================
-
-    const loadFrame = (index) => {
-      if (disposed || cache.has(index) || active.has(index) || failed.has(index)) {
-        return
-      }
-
-      const img = new Image()
-
-      img.decoding = 'async'
-      img.dataset.frameIndex = String(index)
-
-      if ('fetchPriority' in img) {
-        img.fetchPriority = index === targetIndex ? 'high' : 'auto'
-      }
-
-      active.set(index, img)
-
-      img.onload = () => {
-        if (disposed || active.get(index) !== img) {
-          return
-        }
-
-        active.delete(index)
-
-        cache.set(index, img)
-
-        if (index === targetIndex) {
-          draw(img)
-        }
-
-        cleanCache()
-        pump()
-      }
-
-      img.onerror = () => {
-        if (disposed || active.get(index) !== img) {
-          return
-        }
-
-        active.delete(index)
-        failed.add(index)
-
-        console.warn('LUBRIX frame error:', getFrameUrl(index))
-
-        pump()
-      }
-
-      img.src = getFrameUrl(index)
-    }
-
-    // ==================================================
-    // CANCEL FRAME
-    // ==================================================
-
-    const cancelFrame = (index) => {
-      const img = active.get(index)
-
-      if (!img) return
-
-      active.delete(index)
-
-      img.onload = null
-      img.onerror = null
-      img.src = ''
-    }
-
-    // ==================================================
-    // MAIN LOADING QUEUE
-    // ==================================================
-
-    const pump = () => {
-      if (disposed) return
-
-      while (active.size < MAX_CONCURRENT && queue.size > 0) {
-        const entries = [...queue.entries()].sort((a, b) => a[1] - b[1])
-
-        const [index] = entries[0]
-
-        queue.delete(index)
-
-        loadFrame(index)
-      }
-    }
-
-    // ==================================================
-    // SCROLL UPDATE
-    // ==================================================
-
-    const update = (progress) => {
-      if (disposed) return
-
-      const index = Math.round(clamp(progress, 0, 1) * (TOTAL_FRAMES - 1))
-
-      if (index > targetIndex) direction = 1
-      else if (index < targetIndex) direction = -1
-
-      targetIndex = index
-
-      // Draw nearest available frame immediately.
-
-      drawNearest(index)
-
-      // Reset outdated queue.
-
-      queue.clear()
-
-      // Cancel outdated active requests.
-
-      for (const frameIndex of [...active.keys()]) {
-        const distance = (frameIndex - index) * direction
-
-        if (frameIndex !== index && (distance < 0 || distance > 4)) {
-          cancelFrame(frameIndex)
-        }
-      }
-
-      // Current frame has highest priority.
-
-      if (!cache.has(index) && !active.has(index) && !failed.has(index)) {
-        queue.set(index, -10000)
-      }
-
-      // Forward preloading.
-
-      for (let i = 1; i <= PREFETCH_AHEAD; i++) {
-        const next = index + i * direction
-
-        if (
-          next >= 0 &&
-          next < TOTAL_FRAMES &&
-          !cache.has(next) &&
-          !active.has(next) &&
-          !failed.has(next)
-        ) {
-          queue.set(next, i)
-        }
-      }
-
-      // Backward preloading.
-
-      for (let i = 1; i <= PREFETCH_BEHIND; i++) {
-        const previous = index - i * direction
-
-        if (
-          previous >= 0 &&
-          previous < TOTAL_FRAMES &&
-          !cache.has(previous) &&
-          !active.has(previous) &&
-          !failed.has(previous)
-        ) {
-          queue.set(previous, 100 + i)
-        }
-      }
-
-      pump()
-    }
-
-    // ==================================================
-    // FULL BACKGROUND PRELOADER
-    // ==================================================
-
-    const preloadAllFrames = async () => {
-      let nextIndex = PRELOAD_START_FRAME
-
-      const worker = async () => {
-        while (!preloadStopped && !disposed && nextIndex < TOTAL_FRAMES) {
-          const index = nextIndex++
-
-          try {
-            const response = await fetch(getFrameUrl(index), {
-              method: 'GET',
-              cache: 'force-cache',
-              credentials: 'same-origin',
-              signal: preloadController.signal,
-            })
-
-            if (!response.ok) {
-              throw new Error(`HTTP ${response.status}`)
-            }
-
-            // Warm browser HTTP cache.
-            // Do not retain all image bytes in JS memory.
-
-            await response.arrayBuffer()
-
-            preloadCompleted++
-          } catch (error) {
-            if (error.name === 'AbortError') {
-              return
-            }
-
-            preloadFailed++
-
-            console.warn('LUBRIX preload error:', getFrameUrl(index), error)
-          }
-        }
-      }
-
-      await Promise.all(Array.from({ length: PRELOAD_CONCURRENCY }, () => worker()))
-
-      if (!disposed && !preloadStopped) {
-        console.info(`LUBRIX PRELOAD COMPLETE: ${preloadCompleted}/199`, `Failed: ${preloadFailed}`)
-      }
-    }
-
-    // ==================================================
-    // CANVAS RESIZE
-    // ==================================================
-
-    const resize = () => {
-      if (disposed) return
-
-      const rect = canvas.getBoundingClientRect()
-
-      if (!rect.width || !rect.height) return
-
-      const deviceDpr = window.devicePixelRatio || 1
-
-      const pixelDpr = Math.sqrt(MAX_CANVAS_PIXELS / (rect.width * rect.height))
-
-      const dpr = Math.min(deviceDpr, MAX_DPR, pixelDpr)
-
-      const newWidth = Math.max(1, Math.round(rect.width * dpr))
-
-      const newHeight = Math.max(1, Math.round(rect.height * dpr))
-
-      if (canvas.width === newWidth && canvas.height === newHeight) {
-        return
-      }
-
-      width = newWidth
-      height = newHeight
-
-      canvas.width = width
-      canvas.height = height
-
-      ctx.imageSmoothingEnabled = true
-      ctx.imageSmoothingQuality = 'high'
-
-      drawNearest(targetIndex)
-    }
-
-    // ==================================================
-    // RAF SCROLL SCHEDULER
-    // ==================================================
-
-    let pendingProgress = 0
-
-    requestFramesRef.current = (progress) => {
-      pendingProgress = progress
-
-      if (raf !== null) return
-
-      raf = requestAnimationFrame(() => {
-        raf = null
-        update(pendingProgress)
-      })
-    }
-
-    // ==================================================
-    // INITIALIZATION
-    // ==================================================
-
-    resize()
-
-    if ('ResizeObserver' in window) {
-      resizeObserver = new ResizeObserver(resize)
-      resizeObserver.observe(canvas)
-    } else {
-      window.addEventListener('resize', resize)
-    }
-
-    // Load first frame immediately.
-
-    update(0)
-
-    // Start all remaining frame downloads
-    // independently from scroll position.
-
-    preloadAllFrames()
-
-    // ==================================================
-    // CLEANUP
-    // ==================================================
+    // Start from the current scroll position without animating from 0
+    engine.setProgress(scrollYProgress.get(), true)
 
     return () => {
-      disposed = true
-      preloadStopped = true
-
-      preloadController.abort()
-
-      if (raf !== null) {
-        cancelAnimationFrame(raf)
-      }
-
-      resizeObserver?.disconnect()
-
-      window.removeEventListener('resize', resize)
-
-      for (const index of [...active.keys()]) {
-        cancelFrame(index)
-      }
-
-      cache.clear()
-      queue.clear()
-      failed.clear()
-
-      requestFramesRef.current = null
+      engineRef.current = null
+      engine.destroy()
     }
-  }, [])
+  }, [scrollYProgress])
 
   // ====================================================
   // SCROLL SYNCHRONIZATION
   // ====================================================
 
   useMotionValueEvent(scrollYProgress, 'change', (progress) => {
-    requestFramesRef.current?.(progress)
+    engineRef.current?.setProgress(progress)
   })
 
   // ====================================================
-  // PROGRESS BAR
+  // PROGRESS
   // ====================================================
 
   const progressWidth = useTransform(scrollYProgress, [0, 1], ['0%', '100%'])
@@ -804,7 +830,7 @@ export default function SectionThree() {
           bg-[#080808]
         "
       >
-        {/* BACKGROUND FRAME CANVAS */}
+        {/* FRAME CANVAS */}
 
         <canvas
           ref={canvasRef}
@@ -815,7 +841,6 @@ export default function SectionThree() {
             block h-full w-full
           "
           style={{
-            filter: 'brightness(1.12) contrast(1.06) saturate(1.08)',
             transform: 'translateZ(0)',
             willChange: 'transform',
           }}

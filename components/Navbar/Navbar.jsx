@@ -118,7 +118,7 @@ export default function Navbar() {
 
           {/* BUTTONS */}
           <div className="relative z-20 flex shrink-0 items-center gap-3">
-            <Link target="_blank" href="https://lubrix.uz/login">
+            <Link target="_blank" href="https://app.lubrix.uz/login">
               <SpecularButton
                 size="sm"
                 radius={40}
@@ -140,7 +140,7 @@ export default function Navbar() {
               </SpecularButton>
             </Link>
 
-            <Link target="_blank" href="https://lubrix.uz/plans">
+            <Link target="_blank" href="https://app.lubrix.uz/plans">
               <SpecularButton
                 size="sm"
                 radius={40}
