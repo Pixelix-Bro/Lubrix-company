@@ -1,11 +1,10 @@
 import Navbar from '@/components/Navbar/Navbar'
 import SmoothScroll from '@/components/SmoothScroll'
 import CustomIntro from '@/components/Start'
+
 import '@designcodeio/threeui/style.css'
 import 'lenis/dist/lenis.css'
 import './globals.css'
-
-
 
 export const metadata = {
   metadataBase: new URL('https://lubrix.uz'),
@@ -16,7 +15,7 @@ export const metadata = {
   },
 
   description:
-    'Lubrix — moy almashtirish shoxobchalari va avtoservislar uchun zamonaviy CRM platforma. Mijozlar, avtomobillar, xizmatlar, savdo, xodimlar va filiallaringizni yagona tizimda boshqaring. Biznesingizni avtomatlashtiring va barcha jarayonlarni bir joydan nazorat qiling.',
+    'Lubrix — moy almashtirish shoxobchalari va avtoservislar uchun zamonaviy CRM platforma. Mijozlar, avtomobillar, xizmatlar, savdo, xodimlar, ombor va filiallaringizni yagona tizimda boshqaring. Biznesingizni avtomatlashtiring va barcha jarayonlarni bir joydan nazorat qiling.',
 
   applicationName: 'Lubrix',
 
@@ -30,15 +29,14 @@ export const metadata = {
   creator: 'Lubrix',
   publisher: 'Lubrix',
 
-  category: 'Biznes dasturiy ta’minoti',
+  category: 'Business Software',
 
   keywords: [
-    // Brend
+    // Brand
     'Lubrix',
     'Lubrix CRM',
     'Lubrix platformasi',
 
-    // Asosiy xizmatlar
     'Moy almashtirish CRM',
     'Moy almashtirish dasturi',
     'Moy almashtirish shoxobchasi',
@@ -47,7 +45,6 @@ export const metadata = {
     'Avtoservis dasturi',
     'Avtomobil servis boshqaruvi',
 
-    // Biznes boshqaruvi
     'CRM tizimi',
     'Mijozlarni boshqarish tizimi',
     'Biznesni boshqarish dasturi',
@@ -61,7 +58,6 @@ export const metadata = {
     'Avtomobillar tarixi',
     'Xizmatlar hisobini yuritish',
 
-    // O‘zbekiston bozori
     'O‘zbekiston CRM',
     'O‘zbekistonda CRM tizimi',
     'O‘zbekiston biznes dasturlari',
@@ -70,17 +66,18 @@ export const metadata = {
   ],
 
   alternates: {
-    canonical: 'https://lubrix.uz/',
+    canonical: '/',
     languages: {
-      'uz-UZ': 'https://lubrix.uz/',
-      'x-default': 'https://lubrix.uz/',
+      'uz-UZ': '/',
+      'x-default': '/',
     },
   },
+
 
   openGraph: {
     type: 'website',
     locale: 'uz_UZ',
-    url: 'https://lubrix.uz/',
+    url: '/',
     siteName: 'Lubrix',
 
     title: 'Lubrix — Avtoservis biznesingizni aqlli boshqaring',
@@ -99,6 +96,7 @@ export const metadata = {
     ],
   },
 
+
   twitter: {
     card: 'summary_large_image',
 
@@ -114,30 +112,20 @@ export const metadata = {
     icon: [
       {
         url: '/favicon.png',
-        sizes: 'any',
-      },
-      {
-        url: '/favicon.png',
-        sizes: '32x32',
-        type: 'image/png',
-      },
-      {
-        url: '/favicon.png',
-        sizes: '192x192',
-        type: 'image/png',
-      },
-    ],
-
-    apple: [
-      {
-        url: '/fovicon.png',
-        sizes: '180x180',
         type: 'image/png',
       },
     ],
 
     shortcut: '/favicon.png',
+
+    apple: [
+      {
+        url: '/favicon.png',
+        type: 'image/png',
+      },
+    ],
   },
+
 
   manifest: '/site.webmanifest',
 
@@ -155,11 +143,13 @@ export const metadata = {
     },
   },
 
+
   appleWebApp: {
     capable: true,
     title: 'Lubrix',
     statusBarStyle: 'black-translucent',
   },
+
 
   formatDetection: {
     telephone: false,
@@ -168,16 +158,27 @@ export const metadata = {
     email: false,
   },
 
+
   referrer: 'strict-origin-when-cross-origin',
+}
+
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+  themeColor: '#000000',
 }
 
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className={`h-full antialiased`}>
-      <body className="min-h-full flex flex-col bg-white  bg-black">
+    <html lang="uz" className="h-full antialiased">
+      <body className="min-h-screen flex flex-col bg-black">
         <CustomIntro />
+
         <Navbar />
+
         <SmoothScroll>{children}</SmoothScroll>
       </body>
     </html>
