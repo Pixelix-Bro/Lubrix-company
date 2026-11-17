@@ -136,7 +136,7 @@ export const metadata = {
       },
     ],
 
-    shortcut: '/favicon.ico',
+    shortcut: '/favicon.png',
   },
 
   manifest: '/site.webmanifest',
