@@ -966,7 +966,6 @@ export default function SectionThree() {
             </span>
           </div>
 
-          {/* SCROLL INDICATOR */}
 
           <motion.span
             animate={{

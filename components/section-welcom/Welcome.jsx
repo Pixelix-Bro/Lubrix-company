@@ -5,32 +5,32 @@ export default function Welcome() {
     {
       src: '/allbum/album1.avif',
       alt: 'Lubrix CRM boshqaruv paneli',
-      title: 'Smart Management',
-      subtitle: 'Intelligent Business Control',
+      title: 'Aqlli boshqaruv',
+      subtitle: 'Biznesingizni yagona tizimda boshqaring',
     },
     {
       src: '/allbum/album2.avif',
       alt: 'Lubrix mijozlar va avtomobillar boshqaruvi',
-      title: 'Customer Experience',
-      subtitle: 'Every Client Matters',
+      title: 'Mijozlar tajribasi',
+      subtitle: 'Har bir mijoz biz uchun muhim',
     },
     {
       src: '/allbum/album3.avif',
       alt: 'Lubrix ombor va mahsulotlar nazorati',
-      title: 'Inventory Control',
-      subtitle: 'Complete Stock Management',
+      title: 'Ombor nazorati',
+      subtitle: 'Mahsulotlarni to‘liq boshqarish',
     },
     {
       src: '/allbum/album4.avif',
       alt: 'Lubrix moliyaviy tahlil va savdo statistikasi',
-      title: 'Business Analytics',
-      subtitle: 'Insights That Drive Growth',
+      title: 'Biznes tahlili',
+      subtitle: 'Rivojlanish uchun aniq ma’lumotlar',
     },
     {
       src: '/allbum/album5.avif',
       alt: 'Lubrix sun’iy intellekt yordamchisi',
-      title: 'AI Intelligence',
-      subtitle: 'The Future of Management',
+      title: 'Sun’iy intellekt',
+      subtitle: 'Biznes boshqaruvining yangi davri',
     },
   ]
   return (
@@ -40,7 +40,7 @@ export default function Welcome() {
     >
       <div className="head w-full items-center mt-[20px] flex flex-col gap-[20px] justify-center">
         <h2 className="tracking-[20px] font-bold text-[70px]">Lubrix</h2>
-        <p className="w-2xl text-[14px] text-center">
+        <p className="w-2xl text-[16px] text-center">
           Lubrix — moy almashtirish shoxobchalari uchun professional CRM. Barcha filiallaringizni
           yagona tizimda boshqaring. Biznesingizni oson, tez va samarali nazorat qiling.
         </p>
