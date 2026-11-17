@@ -1,30 +1,34 @@
 'use client'
 
 import { motion, useMotionValueEvent, useScroll, useTransform } from 'framer-motion'
+
 import { useEffect, useRef } from 'react'
 
 // ======================================================
 // LUBRIX CINEMATIC FRAME ENGINE
 // ======================================================
 
+// FRAMES
 const TOTAL_FRAMES = 200
 const FRAME_PATH = '/med-avif'
 
-// Loading
-const MAX_CONCURRENT = 3
+// MAIN ENGINE
+const MAX_CONCURRENT = 6
+const MAX_CACHE = 32
 const PREFETCH_AHEAD = 14
 const PREFETCH_BEHIND = 5
 
-// Memory
+// BACKGROUND PRELOADER
+const PRELOAD_CONCURRENCY = 4
+const PRELOAD_START_FRAME = 1
 
-const MAX_CACHE_DESKTOP = 8
-const MAX_CACHE_MOBILE = 5
-// Rendering
+// RENDERING
 const MAX_DPR = 1.5
 const MAX_CANVAS_PIXELS = 2560 * 1440
 
-// Scroll
-const SCROLL_EPSILON = 0.00001
+// ======================================================
+// UTILITIES
+// ======================================================
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value))
 
@@ -318,7 +322,6 @@ function AnimatedFeature({ feature, index, progress }) {
 export default function SectionThree() {
   const sectionRef = useRef(null)
   const canvasRef = useRef(null)
-
   const requestFramesRef = useRef(null)
 
   const { scrollYProgress } = useScroll({
@@ -327,14 +330,19 @@ export default function SectionThree() {
   })
 
   // ====================================================
-  // CINEMATIC FRAME ENGINE
+  // CINEMATIC ENGINE + FULL BACKGROUND PRELOADER
   // ====================================================
 
   useEffect(() => {
     const canvas = canvasRef.current
+
     if (!canvas) return
 
-    const ctx = canvas.getContext('2d', { alpha: false })
+    const ctx = canvas.getContext('2d', {
+      alpha: false,
+      desynchronized: true,
+    })
+
     if (!ctx) return
 
     let disposed = false
@@ -348,14 +356,24 @@ export default function SectionThree() {
     let width = 1
     let height = 1
 
-    const MAX_CONCURRENT = 6
-    const MAX_CACHE = 32
-    const PREFETCH = 10
+    // FRAME STORAGE
 
     const cache = new Map()
     const active = new Map()
     const failed = new Set()
     const queue = new Map()
+
+    // BACKGROUND PRELOAD CONTROL
+
+    const preloadController = new AbortController()
+
+    let preloadStopped = false
+    let preloadCompleted = 0
+    let preloadFailed = 0
+
+    // ==================================================
+    // DRAW FRAME
+    // ==================================================
 
     const draw = (img) => {
       if (!img || disposed) return
@@ -379,11 +397,17 @@ export default function SectionThree() {
       displayedIndex = Number(img.dataset.frameIndex)
     }
 
+    // ==================================================
+    // NEAREST FRAME
+    // ==================================================
+
     const drawNearest = (index) => {
       if (cache.has(index)) {
         const img = cache.get(index)
+
         cache.delete(index)
         cache.set(index, img)
+
         draw(img)
         return
       }
@@ -403,12 +427,18 @@ export default function SectionThree() {
       if (nearest) draw(nearest)
     }
 
+    // ==================================================
+    // CACHE CLEANUP
+    // ==================================================
+
     const cleanCache = () => {
       while (cache.size > MAX_CACHE) {
         let removed = false
 
         for (const [index] of cache) {
-          if (index === targetIndex || index === displayedIndex) continue
+          if (index === targetIndex || index === displayedIndex) {
+            continue
+          }
 
           cache.delete(index)
           removed = true
@@ -419,17 +449,30 @@ export default function SectionThree() {
       }
     }
 
+    // ==================================================
+    // FRAME LOADER
+    // ==================================================
+
     const loadFrame = (index) => {
-      if (disposed || cache.has(index) || active.has(index) || failed.has(index)) return
+      if (disposed || cache.has(index) || active.has(index) || failed.has(index)) {
+        return
+      }
 
       const img = new Image()
+
       img.decoding = 'async'
       img.dataset.frameIndex = String(index)
+
+      if ('fetchPriority' in img) {
+        img.fetchPriority = index === targetIndex ? 'high' : 'auto'
+      }
 
       active.set(index, img)
 
       img.onload = () => {
-        if (disposed || active.get(index) !== img) return
+        if (disposed || active.get(index) !== img) {
+          return
+        }
 
         active.delete(index)
 
@@ -444,12 +487,14 @@ export default function SectionThree() {
       }
 
       img.onerror = () => {
-        if (disposed || active.get(index) !== img) return
+        if (disposed || active.get(index) !== img) {
+          return
+        }
 
         active.delete(index)
         failed.add(index)
 
-        console.warn('Frame yuklanmadi:', getFrameUrl(index))
+        console.warn('LUBRIX frame error:', getFrameUrl(index))
 
         pump()
       }
@@ -457,17 +502,25 @@ export default function SectionThree() {
       img.src = getFrameUrl(index)
     }
 
+    // ==================================================
+    // CANCEL FRAME
+    // ==================================================
+
     const cancelFrame = (index) => {
       const img = active.get(index)
+
       if (!img) return
 
       active.delete(index)
 
-      // Bekor qilingan yuklash onload/onerror chaqirmaydi.
       img.onload = null
       img.onerror = null
       img.src = ''
     }
+
+    // ==================================================
+    // MAIN LOADING QUEUE
+    // ==================================================
 
     const pump = () => {
       if (disposed) return
@@ -478,9 +531,14 @@ export default function SectionThree() {
         const [index] = entries[0]
 
         queue.delete(index)
+
         loadFrame(index)
       }
     }
+
+    // ==================================================
+    // SCROLL UPDATE
+    // ==================================================
 
     const update = (progress) => {
       if (disposed) return
@@ -492,28 +550,33 @@ export default function SectionThree() {
 
       targetIndex = index
 
-      // Eng yaqin tayyor kadrni darhol ko'rsatamiz.
+      // Draw nearest available frame immediately.
+
       drawNearest(index)
 
-      // Eski navbatni butunlay yangilaymiz.
+      // Reset outdated queue.
+
       queue.clear()
 
-      // Scroll yo'nalishiga qarshi ketayotgan eski yuklashlarni bekor qilamiz.
+      // Cancel outdated active requests.
+
       for (const frameIndex of [...active.keys()]) {
         const distance = (frameIndex - index) * direction
 
-        if (frameIndex !== index && (distance < 0 || distance > 3)) {
+        if (frameIndex !== index && (distance < 0 || distance > 4)) {
           cancelFrame(frameIndex)
         }
       }
 
-      // Hozir kerak bo'lgan kadr eng yuqori ustuvorlikda.
-      if (!cache.has(index) && !active.has(index)) {
+      // Current frame has highest priority.
+
+      if (!cache.has(index) && !active.has(index) && !failed.has(index)) {
         queue.set(index, -10000)
       }
 
-      // Scroll yo'nalishida oldindan yuklash.
-      for (let i = 1; i <= PREFETCH; i++) {
+      // Forward preloading.
+
+      for (let i = 1; i <= PREFETCH_AHEAD; i++) {
         const next = index + i * direction
 
         if (
@@ -527,8 +590,9 @@ export default function SectionThree() {
         }
       }
 
-      // Orqaga qaytish uchun oz miqdorda kadr saqlash.
-      for (let i = 1; i <= 3; i++) {
+      // Backward preloading.
+
+      for (let i = 1; i <= PREFETCH_BEHIND; i++) {
         const previous = index - i * direction
 
         if (
@@ -545,18 +609,78 @@ export default function SectionThree() {
       pump()
     }
 
+    // ==================================================
+    // FULL BACKGROUND PRELOADER
+    // ==================================================
+
+    const preloadAllFrames = async () => {
+      let nextIndex = PRELOAD_START_FRAME
+
+      const worker = async () => {
+        while (!preloadStopped && !disposed && nextIndex < TOTAL_FRAMES) {
+          const index = nextIndex++
+
+          try {
+            const response = await fetch(getFrameUrl(index), {
+              method: 'GET',
+              cache: 'force-cache',
+              credentials: 'same-origin',
+              signal: preloadController.signal,
+            })
+
+            if (!response.ok) {
+              throw new Error(`HTTP ${response.status}`)
+            }
+
+            // Warm browser HTTP cache.
+            // Do not retain all image bytes in JS memory.
+
+            await response.arrayBuffer()
+
+            preloadCompleted++
+          } catch (error) {
+            if (error.name === 'AbortError') {
+              return
+            }
+
+            preloadFailed++
+
+            console.warn('LUBRIX preload error:', getFrameUrl(index), error)
+          }
+        }
+      }
+
+      await Promise.all(Array.from({ length: PRELOAD_CONCURRENCY }, () => worker()))
+
+      if (!disposed && !preloadStopped) {
+        console.info(`LUBRIX PRELOAD COMPLETE: ${preloadCompleted}/199`, `Failed: ${preloadFailed}`)
+      }
+    }
+
+    // ==================================================
+    // CANVAS RESIZE
+    // ==================================================
+
     const resize = () => {
       if (disposed) return
 
       const rect = canvas.getBoundingClientRect()
+
       if (!rect.width || !rect.height) return
 
-      const dpr = Math.min(window.devicePixelRatio || 1, 1.5)
+      const deviceDpr = window.devicePixelRatio || 1
 
-      const newWidth = Math.round(rect.width * dpr)
-      const newHeight = Math.round(rect.height * dpr)
+      const pixelDpr = Math.sqrt(MAX_CANVAS_PIXELS / (rect.width * rect.height))
 
-      if (canvas.width === newWidth && canvas.height === newHeight) return
+      const dpr = Math.min(deviceDpr, MAX_DPR, pixelDpr)
+
+      const newWidth = Math.max(1, Math.round(rect.width * dpr))
+
+      const newHeight = Math.max(1, Math.round(rect.height * dpr))
+
+      if (canvas.width === newWidth && canvas.height === newHeight) {
+        return
+      }
 
       width = newWidth
       height = newHeight
@@ -569,6 +693,10 @@ export default function SectionThree() {
 
       drawNearest(targetIndex)
     }
+
+    // ==================================================
+    // RAF SCROLL SCHEDULER
+    // ==================================================
 
     let pendingProgress = 0
 
@@ -583,6 +711,10 @@ export default function SectionThree() {
       })
     }
 
+    // ==================================================
+    // INITIALIZATION
+    // ==================================================
+
     resize()
 
     if ('ResizeObserver' in window) {
@@ -592,14 +724,31 @@ export default function SectionThree() {
       window.addEventListener('resize', resize)
     }
 
+    // Load first frame immediately.
+
     update(0)
+
+    // Start all remaining frame downloads
+    // independently from scroll position.
+
+    preloadAllFrames()
+
+    // ==================================================
+    // CLEANUP
+    // ==================================================
 
     return () => {
       disposed = true
+      preloadStopped = true
 
-      if (raf !== null) cancelAnimationFrame(raf)
+      preloadController.abort()
+
+      if (raf !== null) {
+        cancelAnimationFrame(raf)
+      }
 
       resizeObserver?.disconnect()
+
       window.removeEventListener('resize', resize)
 
       for (const index of [...active.keys()]) {
@@ -627,6 +776,10 @@ export default function SectionThree() {
   // ====================================================
 
   const progressWidth = useTransform(scrollYProgress, [0, 1], ['0%', '100%'])
+
+  // ====================================================
+  // RENDER
+  // ====================================================
 
   return (
     <section
@@ -704,7 +857,7 @@ export default function SectionThree() {
           "
         />
 
-        {/* TOP CINEMATIC SHADOW */}
+        {/* TOP SHADOW */}
 
         <div
           className="
@@ -769,9 +922,7 @@ export default function SectionThree() {
               "
             >
               <motion.div
-                style={{
-                  width: progressWidth,
-                }}
+                style={{ width: progressWidth }}
                 className="
                   absolute left-0 top-0
                   h-full bg-white
