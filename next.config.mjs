@@ -1,12 +1,10 @@
 /** @type {import('next').NextConfig} */
 
 const nextConfig = {
-  // EXISTING CONFIG
   cacheComponents: true,
   partialPrefetching: true,
   reactCompiler: true,
 
-  // TURBOPACK
   turbopack: {
     rules: {
       '*.css': {
@@ -16,7 +14,6 @@ const nextConfig = {
     },
   },
 
-  // AVIF FRAME CACHE
   async headers() {
     return [
       {
