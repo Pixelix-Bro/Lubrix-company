@@ -174,7 +174,7 @@ export const viewport = {
 export default function RootLayout({ children }) {
   return (
     <html lang="uz" className="h-full antialiased">
-      <body className="min-h-screen flex flex-col bg-black">
+      <body className="min-h-screen flex flex-col ">
         <CustomIntro />
 
         <Navbar />
