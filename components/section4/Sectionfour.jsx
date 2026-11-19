@@ -1,12 +1,12 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
-
-import { motion, useMotionValueEvent, useScroll, useSpring, useTransform } from 'framer-motion'
-
 import GridBackground from '@/components/ui/GridBackground'
 import { useLanguage } from '@/lib/i18n'
+import { motion } from 'framer-motion'
+import { useEffect, useRef, useState } from 'react'
+
 import {
+  ArrowLeftRight,
   ArrowUpRight,
   BarChart3,
   Bell,
@@ -20,6 +20,7 @@ import {
   Users,
   Zap,
 } from 'lucide-react'
+
 // ======================================================
 // LUBRIX — WHITE LUXURY ECOSYSTEM
 // ======================================================
@@ -112,20 +113,36 @@ const features = [
 ]
 
 // ======================================================
+// ENGLISH TRANSLATIONS
+// ======================================================
+
+const englishFeatures = [
+  ['Management', 'Smart management', 'Manage every business process in one platform.'],
+  ['Analytics', 'Real-time statistics', 'Track revenue, costs, and business KPIs in real time.'],
+  ['CRM', 'Customer database', 'Manage customers, vehicles, and service history.'],
+  ['Inventory', 'Inventory control', 'Monitor stock levels and stock movements.'],
+  ['Performance', 'Fast service', 'Simplify and accelerate service operations.'],
+  ['Security', 'Secure system', 'Use tools designed to protect your data.'],
+  ['Finance', 'Payment control', 'Track financial transactions and payments in one place.'],
+  ['Team', 'Employee management', 'Manage your team, tasks, and workflows efficiently.'],
+  ['Notifications', 'Automatic reminders', 'Stay informed about important tasks and processes.'],
+  ['Responsive', 'Every device', 'Use it from a computer, tablet, or smartphone.'],
+  ['Monitoring', 'Fast monitoring', 'Continuously monitor operations and service status.'],
+  ['Cloud System', 'Cloud infrastructure', 'Access your data from anywhere with internet access.'],
+]
+
+// ======================================================
 // FEATURE CARD
 // ======================================================
 
-function FeatureCard({ feature, index }) {
+function FeatureCard({ feature }) {
   const Icon = feature.icon
 
   return (
     <motion.article
-      initial={{ opacity: 0, y: 30 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, amount: 0.1 }}
+      whileHover={{ y: -5 }}
       transition={{
-        duration: 0.85,
-        delay: (index % 4) * 0.06,
+        duration: 0.45,
         ease: [0.22, 1, 0.36, 1],
       }}
       className="
@@ -133,8 +150,9 @@ function FeatureCard({ feature, index }) {
         justify-between overflow-hidden
         h-[330px] w-[285px]
         border border-[#EAEAEA]
-       backdrop-blur-[5px] p-7
-        transition-all duration-700
+        bg-white/70 backdrop-blur-[5px]
+        p-7
+        transition-colors duration-500
         hover:border-[#AFAFAF]
         sm:h-[350px] sm:w-[320px] sm:p-8
         lg:w-[350px]
@@ -149,6 +167,7 @@ function FeatureCard({ feature, index }) {
             border border-[#EAEAEA]
             text-[#171717]
             transition-all duration-500
+            group-hover:border-black
             group-hover:bg-black
             group-hover:text-white
           "
@@ -166,7 +185,7 @@ function FeatureCard({ feature, index }) {
         </span>
       </div>
 
-      {/* BOTTOM */}
+      {/* CONTENT */}
 
       <div>
         <div
@@ -223,16 +242,241 @@ function FeatureCard({ feature, index }) {
 
       {/* HOVER LINE */}
 
-      <motion.div
+      <div
         className="
-          absolute bottom-0 left-0
-          h-[2px] bg-black
-        "
-        initial={{ width: '0%' }}
-        whileHover={{ width: '100%' }}
-        transition={{ duration: 0.6 }}
+        absolute bottom-0 left-0
+        h-[2px] w-full
+        origin-left scale-x-0
+        bg-black
+        transition-transform duration-700
+        ease-[cubic-bezier(0.22,1,0.36,1)]
+        group-hover:scale-x-100
+      "
       />
     </motion.article>
+  )
+}
+
+// ======================================================
+// INFINITE DRAG CAROUSEL
+// ======================================================
+
+function InfiniteCarousel({ items }) {
+  const viewportRef = useRef(null)
+  const trackRef = useRef(null)
+  const groupRef = useRef(null)
+
+  const position = useRef(0)
+  const groupWidth = useRef(0)
+
+  const paused = useRef(false)
+  const dragging = useRef(false)
+
+  const startX = useRef(0)
+  const startPosition = useRef(0)
+  const lastTime = useRef(0)
+
+  const [isDragging, setIsDragging] = useState(false)
+
+  // ----------------------------------------------------
+  // POSITION NORMALIZATION
+  // ----------------------------------------------------
+
+  const normalizePosition = (value) => {
+    const width = groupWidth.current
+
+    if (!width) return 0
+
+    let result = value % width
+
+    if (result > 0) result -= width
+
+    return result
+  }
+
+  // ----------------------------------------------------
+  // MEASURE WIDTH
+  // ----------------------------------------------------
+
+  useEffect(() => {
+    const group = groupRef.current
+    if (!group) return
+
+    const measure = () => {
+      const width = group.getBoundingClientRect().width
+
+      if (width > 0) {
+        groupWidth.current = width
+        position.current = normalizePosition(position.current)
+      }
+    }
+
+    measure()
+
+    const observer = new ResizeObserver(measure)
+
+    observer.observe(group)
+
+    return () => observer.disconnect()
+  }, [])
+
+  // ----------------------------------------------------
+  // ANIMATION ENGINE
+  // ----------------------------------------------------
+
+  useEffect(() => {
+    const track = trackRef.current
+    if (!track) return
+
+    let frameId
+
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+    const SPEED = 35
+
+    const animate = (time) => {
+      if (!lastTime.current) {
+        lastTime.current = time
+      }
+
+      const delta = Math.min(time - lastTime.current, 40)
+
+      lastTime.current = time
+
+      if (!paused.current && !dragging.current && !prefersReducedMotion && groupWidth.current > 0) {
+        position.current -= (SPEED * delta) / 1000
+
+        position.current = normalizePosition(position.current)
+      }
+
+      track.style.transform = `translate3d(${position.current}px, 0, 0)`
+
+      frameId = requestAnimationFrame(animate)
+    }
+
+    frameId = requestAnimationFrame(animate)
+
+    return () => {
+      cancelAnimationFrame(frameId)
+      lastTime.current = 0
+    }
+  }, [])
+
+  // ----------------------------------------------------
+  // POINTER DOWN
+  // ----------------------------------------------------
+
+  const handlePointerDown = (event) => {
+    if (event.pointerType === 'mouse' && event.button !== 0) return
+
+    dragging.current = true
+
+    setIsDragging(true)
+
+    startX.current = event.clientX
+    startPosition.current = position.current
+
+    viewportRef.current?.setPointerCapture(event.pointerId)
+  }
+
+  // ----------------------------------------------------
+  // POINTER MOVE
+  // ----------------------------------------------------
+
+  const handlePointerMove = (event) => {
+    if (!dragging.current) return
+
+    const movement = event.clientX - startX.current
+
+    position.current = normalizePosition(startPosition.current + movement)
+
+    if (trackRef.current) {
+      trackRef.current.style.transform = `translate3d(${position.current}px, 0, 0)`
+    }
+  }
+
+  // ----------------------------------------------------
+  // POINTER UP
+  // ----------------------------------------------------
+
+  const handlePointerUp = () => {
+    if (!dragging.current) return
+
+    dragging.current = false
+
+    setIsDragging(false)
+  }
+
+  // ----------------------------------------------------
+  // RENDER
+  // ----------------------------------------------------
+
+  return (
+    <div
+      ref={viewportRef}
+      className="
+        relative z-10 w-full
+        overflow-hidden
+        cursor-grab
+        active:cursor-grabbing
+      "
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerUp}
+      onLostPointerCapture={handlePointerUp}
+      onMouseEnter={() => {
+        paused.current = true
+      }}
+      onMouseLeave={() => {
+        if (!dragging.current) {
+          paused.current = false
+        }
+      }}
+      style={{
+        touchAction: 'pan-y',
+        userSelect: 'none',
+        WebkitUserSelect: 'none',
+      }}
+    >
+      <div
+        ref={trackRef}
+        className="flex w-max will-change-transform"
+        style={{
+          transform: 'translate3d(0,0,0)',
+        }}
+      >
+        {/* FIRST GROUP */}
+
+        <div
+          ref={groupRef}
+          className="
+            flex shrink-0 gap-4 pr-4
+            sm:gap-5 sm:pr-5
+            px-6 sm:px-10 lg:px-16
+          "
+        >
+          {items.map((feature) => (
+            <FeatureCard key={`first-${feature.number}`} feature={feature} />
+          ))}
+        </div>
+
+        {/* DUPLICATE GROUP */}
+
+        <div
+          aria-hidden="true"
+          className="
+            flex shrink-0 gap-4 pr-4
+            sm:gap-5 sm:pr-5
+            px-6 sm:px-10 lg:px-16
+          "
+        >
+          {items.map((feature) => (
+            <FeatureCard key={`second-${feature.number}`} feature={feature} />
+          ))}
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -242,350 +486,165 @@ function FeatureCard({ feature, index }) {
 
 export default function Features() {
   const { language } = useLanguage()
-  const sectionRef = useRef(null)
-  const viewportRef = useRef(null)
-  const trackRef = useRef(null)
 
-  const [maxScroll, setMaxScroll] = useState(0)
-  const [activeIndex, setActiveIndex] = useState(0)
+  // ----------------------------------------------------
+  // LOCALIZED FEATURES
+  // ----------------------------------------------------
 
-  // ====================================================
-  // RESPONSIVE SCROLL CALCULATION
-  // ====================================================
+  const localizedFeatures =
+    language === 'en'
+      ? features.map((feature, index) => ({
+          ...feature,
+          category: englishFeatures[index][0],
+          title: englishFeatures[index][1],
+          description: englishFeatures[index][2],
+        }))
+      : features
 
-  useEffect(() => {
-    const viewport = viewportRef.current
-    const track = trackRef.current
-
-    if (!viewport || !track) return
-
-    let resizeObserver
-
-    const updateDimensions = () => {
-      const distance = Math.max(0, track.scrollWidth - viewport.clientWidth)
-
-      setMaxScroll(distance)
-    }
-
-    updateDimensions()
-
-    resizeObserver = new ResizeObserver(updateDimensions)
-
-    resizeObserver.observe(viewport)
-    resizeObserver.observe(track)
-
-    window.addEventListener('resize', updateDimensions)
-
-    return () => {
-      resizeObserver.disconnect()
-      window.removeEventListener('resize', updateDimensions)
-    }
-  }, [])
-
-  // ====================================================
-  // VERTICAL SCROLL ENGINE
-  // ====================================================
-
-  const { scrollYProgress } = useScroll({
-    target: sectionRef,
-    offset: ['start start', 'end end'],
-  })
-
-  // ====================================================
-  // HORIZONTAL MOVEMENT
-  // ====================================================
-
-  const rawX = useTransform(scrollYProgress, [0, 1], [0, -maxScroll])
-
-  const x = useSpring(rawX, {
-    stiffness: 90,
-    damping: 28,
-    mass: 0.3,
-    restDelta: 0.01,
-  })
-
-  // ====================================================
-  // PROGRESS BAR
-  // ====================================================
-
-  const progress = useTransform(scrollYProgress, (value) => `${value * 100}%`)
-
-  // ====================================================
-  // ACTIVE CARD
-  // ====================================================
-
-  useMotionValueEvent(scrollYProgress, 'change', (value) => {
-    const index = Math.min(features.length - 1, Math.floor(value * features.length))
-
-    setActiveIndex(index)
-  })
-
-  const activeNumber = String(activeIndex + 1).padStart(2, '0')
-
-  // ====================================================
-  // DYNAMIC SECTION HEIGHT
-  // ====================================================
-
-  const sectionHeight = `calc(100vh + ${maxScroll}px)`
-
-  // ====================================================
+  // ----------------------------------------------------
   // RENDER
-  // ====================================================
+  // ----------------------------------------------------
 
   return (
     <section
-      ref={sectionRef}
       id="benefits"
       data-theme="light"
+      className="
+        relative flex min-h-screen
+        w-full flex-col justify-center
+        overflow-hidden bg-white
+        py-24 text-black
+      "
       style={{
-        height: sectionHeight,
-        backgroundColor: '#FFFFFF',
-        color: '#111111',
         colorScheme: 'light',
       }}
-      className="
-        relative w-full
-         text-black
-      "
     >
+      {/* BACKGROUND */}
+
+      <div className="pointer-events-none absolute inset-0 z-0">
+        <GridBackground />
+      </div>
+
+      {/* BRAND INTRO */}
+
       <div
         className="
-          sticky top-0 flex h-screen
-          flex-col justify-center
-          overflow-hidden bg-white
-        "
+        relative z-10 mx-auto
+        mb-10 w-full max-w-[1500px]
+        px-6 text-center
+        sm:mb-14
+      "
       >
-        {/* ==========================================
-            GRID BACKGROUND
-        ========================================== */}
-
-        <GridBackground />
-
-        {/* ==========================================
-            BRAND INTRO
-        ========================================== */}
-
-        <div
-          className="
-          relative z-10 mx-auto
-          mb-10 w-full max-w-[1500px]
-          px-6 text-center
-          sm:mb-12
-        "
+        <motion.div
+          initial={{ opacity: 0, y: 25 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{
+            duration: 1,
+            ease: [0.22, 1, 0.36, 1],
+          }}
         >
-          <motion.div
-            initial={{ opacity: 0, y: 25 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{
-              duration: 1,
-              ease: [0.22, 1, 0.36, 1],
-            }}
+          <h2
+            className="
+            text-[58px] font-medium
+            leading-none tracking-[0.12em]
+            text-black
+            sm:text-[76px]
+            lg:text-[90px]
+          "
           >
-            <h2
-              className="
-              text-[58px] font-medium
-              leading-none tracking-[0.12em]
-              text-black
-              sm:text-[76px]
-              lg:text-[90px]
-            "
-            >
-              Lubrix
-            </h2>
-
-            <p
-              className="
-              mx-auto mt-6 max-w-[620px]
-              text-[12px] leading-[1.9]
-              tracking-[-0.015em]
-              text-[#777777]
-              sm:text-[14px]
-            "
-            >
-              {language === 'en'
-                ? 'Lubrix is a professional CRM for oil-change centers. Manage all branches in one system and control your business quickly and efficiently.'
-                : 'Lubrix — moy almashtirish shoxobchalari uchun professional CRM. Barcha filiallaringizni yagona tizimda boshqaring. Biznesingizni oson, tez va samarali nazorat qiling.'}
-            </p>
-          </motion.div>
-        </div>
-
-        {/* ==========================================
-            SECTION HEADER
-        ========================================== */}
-
-        <div
-          className="
-          relative z-10 mx-auto
-          mb-8 flex w-full max-w-[1500px]
-          flex-col justify-between gap-5
-          px-6 sm:px-10
-          md:flex-row md:items-end
-          lg:px-16
-        "
-        >
-          <div>
-            <span
-              className="
-              mb-4 block text-[10px]
-              uppercase tracking-[0.3em]
-              text-[#A0A0A0]
-            "
-            >
-              {language === 'en' ? '01 — 12 / Our ecosystem' : '01 — 12 / Ekotizimimiz'}
-            </span>
-
-            <h3
-              className="
-              text-[35px] font-normal
-              leading-tight tracking-[-0.055em]
-              sm:text-[46px]
-              lg:text-[54px]
-            "
-            >
-              {language === 'en' ? 'All capabilities.' : 'Barcha imkoniyatlar.'}
-            </h3>
-          </div>
+            Lubrix
+          </h2>
 
           <p
             className="
-            max-w-[340px] pb-1
-            text-[13px] leading-[1.9]
-            text-[#888888]
+            mx-auto mt-6 max-w-[620px]
+            text-[12px] leading-[1.9]
+            tracking-[-0.015em]
+            text-[#777777]
+            sm:text-[14px]
           "
           >
             {language === 'en'
-              ? 'All the tools you need to grow your business. In one complete platform.'
-              : 'Biznesingizni rivojlantirish uchun kerak bo‘lgan barcha vositalar. Bitta mukammal platformada.'}
+              ? 'Lubrix is a professional CRM for oil-change centers. Manage all branches in one system and control your business quickly and efficiently.'
+              : 'Lubrix — moy almashtirish shoxobchalari uchun professional CRM. Barcha filiallaringizni yagona tizimda boshqaring. Biznesingizni oson, tez va samarali nazorat qiling.'}
           </p>
-        </div>
+        </motion.div>
+      </div>
 
-        {/* ==========================================
-            HORIZONTAL CAROUSEL
-        ========================================== */}
+      {/* SECTION HEADER */}
 
-        <div
-          ref={viewportRef}
-          className="
-            relative z-10 w-full
-            overflow-hidden
-          "
-        >
-          <motion.div
-            ref={trackRef}
-            style={{ x }}
+      <div
+        className="
+        relative z-10 mx-auto
+        mb-8 flex w-full max-w-[1500px]
+        flex-col justify-between gap-5
+        px-6 sm:px-10
+        md:flex-row md:items-end
+        lg:px-16
+      "
+      >
+        <div>
+          <span
             className="
-              flex w-max gap-4
-              px-6
-              sm:gap-5 sm:px-10
-              lg:px-16
-              will-change-transform
-            "
+            mb-4 block text-[10px]
+            uppercase tracking-[0.3em]
+            text-[#A0A0A0]
+          "
           >
-            {features.map((feature, index) => {
-              const en = [
-                [
-                  'Management',
-                  'Smart management',
-                  'Manage every business process in one platform.',
-                ],
-                [
-                  'Analytics',
-                  'Real-time statistics',
-                  'Track revenue, costs, and business KPIs in real time.',
-                ],
-                ['CRM', 'Customer database', 'Manage customers, vehicles, and service history.'],
-                ['Inventory', 'Inventory control', 'Monitor stock levels and stock movements.'],
-                ['Performance', 'Fast service', 'Simplify and accelerate service operations.'],
-                ['Security', 'Secure system', 'Use tools designed to protect your data.'],
-                [
-                  'Finance',
-                  'Payment control',
-                  'Track financial transactions and payments in one place.',
-                ],
-                [
-                  'Team',
-                  'Employee management',
-                  'Manage your team, tasks, and workflows efficiently.',
-                ],
-                [
-                  'Notifications',
-                  'Automatic reminders',
-                  'Stay informed about important tasks and processes.',
-                ],
-                ['Responsive', 'Every device', 'Use it from a computer, tablet, or smartphone.'],
-                [
-                  'Monitoring',
-                  'Fast monitoring',
-                  'Continuously monitor operations and service status.',
-                ],
-                [
-                  'Cloud System',
-                  'Cloud infrastructure',
-                  'Access your data from anywhere with internet access.',
-                ],
-              ]
-              const localized =
-                language === 'en'
-                  ? {
-                      ...feature,
-                      category: en[index][0],
-                      title: en[index][1],
-                      description: en[index][2],
-                    }
-                  : feature
-              return <FeatureCard key={feature.number} feature={localized} index={index} />
-            })}
-          </motion.div>
+            {language === 'en' ? '01 — 12 / Our ecosystem' : '01 — 12 / Ekotizimimiz'}
+          </span>
+
+          <h3
+            className="
+            text-[35px] font-normal
+            leading-tight tracking-[-0.055em]
+            sm:text-[46px]
+            lg:text-[54px]
+          "
+          >
+            {language === 'en' ? 'All capabilities.' : 'Barcha imkoniyatlar.'}
+          </h3>
         </div>
 
-        {/* ==========================================
-            PROGRESS
-        ========================================== */}
-
-        <div
+        <p
           className="
-          relative z-10 mx-auto
-          mt-9 flex w-full max-w-[1500px]
-          items-center gap-5
-          px-6 sm:px-10
-          lg:px-16
+          max-w-[340px] pb-1
+          text-[13px] leading-[1.9]
+          text-[#888888]
         "
         >
-          <span
-            className="
-            font-mono text-[10px]
-            tracking-wider text-black
-            tabular-nums
-          "
-          >
-            {activeNumber}
-          </span>
+          {language === 'en'
+            ? 'All the tools you need to grow your business. In one complete platform.'
+            : 'Biznesingizni rivojlantirish uchun kerak bo‘lgan barcha vositalar. Bitta mukammal platformada.'}
+        </p>
+      </div>
 
-          <div
-            className="
-            relative h-px flex-1
-            overflow-hidden bg-[#E8E8E8]
-          "
-          >
-            <motion.div
-              style={{ width: progress }}
-              className="
-                absolute inset-y-0 left-0
-                bg-black
-              "
-            />
-          </div>
+      {/* INFINITE CAROUSEL */}
 
-          <span
-            className="
-            font-mono text-[10px]
-            tracking-wider text-[#AAAAAA]
-          "
-          >
-            12
-          </span>
-        </div>
+      <InfiniteCarousel items={localizedFeatures} />
+
+      {/* BOTTOM INTERACTION INDICATOR */}
+
+      <div
+        className="
+        relative z-10 mx-auto
+        mt-9 flex w-full max-w-[1500px]
+        items-center justify-center gap-3
+        px-6
+      "
+      >
+        <ArrowLeftRight size={14} strokeWidth={1.4} className="text-[#999999]" />
+
+        <span
+          className="
+          text-[10px] uppercase
+          tracking-[0.22em]
+          text-[#999999]
+        "
+        >
+          {language === 'en' ? 'Drag to explore · 12 features' : 'Surib ko‘ring · 12 imkoniyat'}
+        </span>
       </div>
     </section>
   )
