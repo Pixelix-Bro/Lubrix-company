@@ -63,7 +63,7 @@ export default function Welcome() {
 
         w-full relative flex flex-col items-center justify-center text-black
         gap-[40px] sm:gap-[60px] lg:gap-[100px]
-        pt-[110px] pb-[50px] lg:pt-0 lg:pb-0
+        pt-[50px] pb-[50px] lg:pt-0 lg:pb-0
       "
     >
       <GridBackground />
