@@ -100,7 +100,7 @@ export default function Navbar() {
           fixed inset-0 z-0 lg:hidden
           h-[100dvh] w-full
           backdrop-blur-2xl backdrop-saturate-150
-          transition-all duration-500 ease-in-out
+          transition-all duration-200 ease-in-out
           ${texte ? 'bg-white/75 text-black' : 'bg-black/70 text-white'}
           ${open ? 'opacity-100 visible pointer-events-auto' : 'opacity-0 invisible pointer-events-none'}
         `}
@@ -115,7 +115,7 @@ export default function Navbar() {
                 style={{ transitionDelay: open ? `${150 + i * 70}ms` : '0ms' }}
                 className={`
                   border-b border-current/15 py-5 text-4xl font-medium
-                  transition-all duration-500 ease-out
+                  transition-all duration-200 ease-out
                   active:opacity-60
                   ${open ? 'translate-y-0 opacity-100' : 'translate-y-6 opacity-0'}
                 `}
@@ -129,7 +129,7 @@ export default function Navbar() {
             style={{ transitionDelay: open ? `${150 + menu.length * 70}ms` : '0ms' }}
             className={`
               mt-10 flex items-center gap-3
-              transition-all duration-500 ease-out
+              transition-all duration-200 ease-out
               ${open ? 'translate-y-0 opacity-100' : 'translate-y-6 opacity-0'}
             `}
           >
@@ -154,7 +154,7 @@ export default function Navbar() {
 
       <div
         className={`
-          relative z-10 transition-all duration-500 ease-in-out
+          relative z-10 transition-all duration-200 ease-in-out
           ${active ? 'w-[94%] md:w-[88%] xl:w-[65%]' : 'w-full'}
         `}
         style={{ height: active ? 76 : 82 }}
@@ -187,14 +187,14 @@ export default function Navbar() {
             alt="Lubrix"
             width={180}
             height={40}
-            className="w-[120px] sm:w-[140px] lg:w-[160px] object-contain shrink-0 transition-all duration-500"
+            className="w-[120px] sm:w-[140px] lg:w-[160px] object-contain shrink-0 transition-all duration-200"
           />
 
           {/* LINKS (desktop) */}
           <nav
             className={`
               relative z-20 hidden lg:flex items-center gap-7
-              whitespace-nowrap transition-colors duration-500
+              whitespace-nowrap transition-colors duration-200
               ${texte ? 'text-black' : 'text-white'}
             `}
           >
@@ -204,12 +204,12 @@ export default function Navbar() {
                 href={item.link}
                 className="
                   relative py-2
-                  transition-all duration-300
+                  transition-all duration-200
                   hover:opacity-60
                   after:absolute after:left-0 after:bottom-0
                   after:h-[1px] after:w-0
                   after:bg-current after:transition-all
-                  after:duration-300
+                  after:duration-200
                   hover:after:w-full
                 "
               >
@@ -239,7 +239,7 @@ export default function Navbar() {
             className={`
               relative z-20 flex lg:hidden shrink-0
               h-10 w-10 items-center justify-center rounded-full
-              transition-colors duration-500
+              transition-colors duration-200
               ${texte ? 'text-black' : 'text-white'}
             `}
           >
@@ -247,21 +247,21 @@ export default function Navbar() {
               <span
                 className={`
                   absolute left-0 h-[1.5px] w-full rounded-full bg-current
-                  transition-all duration-300
+                  transition-all duration-200
                   ${open ? 'top-[6px] rotate-45' : 'top-0'}
                 `}
               />
               <span
                 className={`
                   absolute left-0 top-[6px] h-[1.5px] w-full rounded-full bg-current
-                  transition-all duration-300
+                  transition-all duration-200
                   ${open ? 'opacity-0' : 'opacity-100'}
                 `}
               />
               <span
                 className={`
                   absolute left-0 h-[1.5px] w-full rounded-full bg-current
-                  transition-all duration-300
+                  transition-all duration-200
                   ${open ? 'top-[6px] -rotate-45' : 'top-[12px]'}
                 `}
               />
