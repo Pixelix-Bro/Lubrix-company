@@ -124,17 +124,17 @@ export default function Footer() {
             <ul className="flex flex-col gap-3">
               <li>
                 <a href="tel:+998900000000" className={linkClass}>
-                  +998 90 000 00 00
+                  +998
                 </a>
               </li>
               <li>
                 <a
-                  href="https://maps.google.com/?q=Tashkent,Uzbekistan"
+                  href="https://maps.google.com/?q=Namangan,Uzbekistan"
                   target="_blank"
                   rel="noreferrer"
                   className={linkClass}
                 >
-                  Toshkent, O‘zbekiston
+                  Namangan, O‘zbekiston
                 </a>
               </li>
             </ul>

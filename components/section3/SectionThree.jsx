@@ -685,7 +685,6 @@ export default function SectionThree() {
               IMKONIYATLAR
             </span>
           </div>
-          <span className="text-[9px] tracking-[0.25em] text-white/65 sm:text-xs">SCROLL</span>
         </div>
       </div>
     </section>

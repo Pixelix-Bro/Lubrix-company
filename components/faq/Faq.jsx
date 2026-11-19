@@ -83,7 +83,7 @@ function FaqItem({ item, index, isOpen, onToggle }) {
   }
 
   return (
-    <li onPointerMove={handlePointerMove} className="group/item relative border-b border-white/10">
+    <li onPointerMove={handlePointerMove} className="group/item relative border-b backdrop-blur-3xl rounded-[50px] p-[20px] overflow-hidden border-white/10">
       {/* Spotlight */}
       <div
         aria-hidden="true"
@@ -161,7 +161,7 @@ function FaqItem({ item, index, isOpen, onToggle }) {
         id={panelId}
         role="region"
         aria-labelledby={buttonId}
-        className={`grid transition-[grid-template-rows] duration-700 ${
+        className={`grid transition-[grid-template-rows]  duration-700 ${
           isOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
         }`}
         style={{
@@ -329,7 +329,7 @@ export default function FAQ() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.1 }}
             transition={{ duration: 0.85, ease: EASE }}
-            className="border-t border-white/10"
+            className="border-t flex flex-col gap-[20px] border-white/10"
           >
             {FAQ_DATA.map((item, index) => (
               <FaqItem

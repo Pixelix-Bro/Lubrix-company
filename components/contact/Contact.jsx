@@ -143,17 +143,15 @@ export default function Contact() {
       </div>
 
       {/* Main content */}
-      <div className="relative z-10 mx-auto flex w-full max-w-[1600px] flex-1 flex-col px-6 sm:px-10 lg:px-16 xl:px-24">
-        <main className="grid flex-1 grid-cols-1 content-center gap-12 py-16 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:gap-16 lg:py-12 xl:gap-24">
+      <div className="relative z-10 mx-auto flex w-full max-w-[1600px] flex-1 flex-col px-6 sm:px-10 lg:px-16 xl:px-24 p-[20px] pt-[50px] pb-[50px] justify-center">
+        <main className="flex items-center flex-col lg:flex-row md:gap-[100px] lg:gap-[250px] ">
           {/* Left side */}
-          <div className="flex flex-col">
+          <div className="flex flex-col w-full">
             <h1
               id="contact-title"
-              className="contact-reveal max-w-[750px] text-[clamp(3.3rem,7vw,5.3rem)] font-medium leading-[0.94] tracking-[-0.085em]"
+              className="contact-reveal max-w-[750px] text-[clamp(3.3rem,7vw,4.3rem)] font-medium leading-[0.94] tracking-[-0.085em]"
             >
-              Har bir
-              <br />
-              yaxshi g‘oya
+              Har bir yaxshi g‘oya
               <br />
               <span className="text-[#bdbdb8]">suhbatdan.</span>
             </h1>
@@ -164,7 +162,7 @@ export default function Contact() {
             </p>
 
             {/* Contact details */}
-            <div className="mt-12 flex max-w-[470px] flex-col gap-4">
+            <div className="mt-12 flex max-w-full flex-col gap-4">
               {CONTACTS.map((item) => {
                 const Icon = item.icon
 
@@ -175,7 +173,7 @@ export default function Contact() {
                     target={item.external ? '_blank' : undefined}
                     rel={item.external ? 'noopener noreferrer' : undefined}
                     aria-label={`${item.label}: ${item.value}`}
-                    className="contact-reveal group flex items-center justify-between rounded-[50px] border-y border-black/[0.09] p-4 shadow-lg backdrop-blur-3xl transition-all duration-300 hover:border-black/30 hover:bg-white/30"
+                    className="contact-reveal group flex items-center justify-between  rounded-[50px] border-y border-black/[0.09] p-4 shadow-lg backdrop-blur-3xl transition-all duration-300 hover:border-black/30 hover:bg-white/30"
                   >
                     <div className="flex items-center gap-4">
                       <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/80 bg-white/55 shadow-[0_2px_12px_rgba(0,0,0,0.025)] backdrop-blur-xl transition-all duration-300 group-hover:bg-white group-hover:shadow-md">

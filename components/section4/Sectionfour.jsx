@@ -132,7 +132,7 @@ function FeatureCard({ feature, index }) {
         justify-between overflow-hidden
         h-[330px] w-[285px]
         border border-[#EAEAEA]
-        bg-white p-7
+       backdrop-blur-[5px] p-7
         transition-all duration-700
         hover:border-[#AFAFAF]
         sm:h-[350px] sm:w-[320px] sm:p-8
@@ -343,7 +343,7 @@ export default function Features() {
       }}
       className="
         relative w-full
-        bg-white text-black
+         text-black
       "
     >
       <div
@@ -530,40 +530,6 @@ export default function Features() {
           "
           >
             12
-          </span>
-        </div>
-
-        {/* ==========================================
-            FOOTER
-        ========================================== */}
-
-        <div
-          className="
-          relative z-10 mx-auto
-          mt-5 flex w-full max-w-[1500px]
-          items-center justify-between
-          px-6 sm:px-10
-          lg:px-16
-        "
-        >
-          <span
-            className="
-            text-[9px] uppercase
-            tracking-[0.25em]
-            text-[#B0B0B0]
-          "
-          >
-            Lubrix ecosystem
-          </span>
-
-          <span
-            className="
-            text-[9px] uppercase
-            tracking-[0.25em]
-            text-[#B0B0B0]
-          "
-          >
-            Scroll to explore
           </span>
         </div>
       </div>
