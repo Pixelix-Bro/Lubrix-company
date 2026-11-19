@@ -1,6 +1,5 @@
 import Navbar from '@/components/Navbar/Navbar'
 import SmoothScroll from '@/components/SmoothScroll'
-import CustomIntro from '@/components/Start'
 import { LanguageProvider } from '@/lib/i18n'
 
 import '@designcodeio/threeui/style.css'
@@ -169,8 +168,6 @@ export default function RootLayout({ children }) {
     <html lang="uz" className="h-full antialiased">
       <body className="min-h-screen flex flex-col ">
         <LanguageProvider>
-          <CustomIntro />
-
           <Navbar />
 
           <SmoothScroll>{children}</SmoothScroll>
