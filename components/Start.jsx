@@ -3,13 +3,7 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect, useState } from 'react'
 
-const words = [
-  '',
-  'SALOM',
-  'LUBRIX ga xush kelibsiz.',
-  'Innovatsiya va mukammallik uyg‘unligi.',
-  'Kelajakni bugun his eting.',
-]
+const words = ['XUSH KELIBSIZ!', 'Bu — LUBRIX.', 'Biznesingiz uchun aqlli boshqaruv.']
 export default function CustomIntro() {
   const [index, setIndex] = useState(0)
   const [finished, setFinished] = useState(false)

@@ -8,6 +8,10 @@
   font-display: swap;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 :root {
   --font-michroma: 'Michroma', sans-serif;
 }

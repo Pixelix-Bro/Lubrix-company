@@ -1,4 +1,5 @@
 import FlexCarousel from '@/components/ui/FlexCarousel'
+import GridBackground from '@/components/ui/GridBackground';
 
 export default function Welcome() {
   const items = [
@@ -35,19 +36,46 @@ export default function Welcome() {
   ]
   return (
     <section
+      id="about"
       data-theme="light"
-      className="w-full  relative flex-col items-center flex   gap-[100px]   text-black "
+      className="
+      h-[100vh]
+        w-full relative flex flex-col items-center text-black
+        gap-[40px] sm:gap-[60px] lg:gap-[100px]
+        pt-[110px] pb-[50px] lg:pt-0 lg:pb-0
+      "
     >
-      <div className="head w-full items-center mt-[20px] flex flex-col gap-[20px] justify-center">
-        <h2 className="tracking-[20px] font-bold text-[70px]">Lubrix</h2>
-        <p className="w-2xl text-[16px] text-center">
+      <GridBackground/>
+      {/* HEAD */}
+      <div className="head w-full items-center mt-[20px] flex flex-col gap-[16px] lg:gap-[20px] justify-center px-5">
+        <h2
+          className="
+            font-bold text-center
+            text-[40px] tracking-[8px]
+            sm:text-[56px] sm:tracking-[14px]
+            lg:text-[70px] lg:tracking-[20px]
+          "
+        >
+          Lubrix
+        </h2>
+        <p className="w-full max-w-2xl text-[14px] sm:text-[15px] lg:text-[16px] text-center">
           Lubrix — moy almashtirish shoxobchalari uchun professional CRM. Barcha filiallaringizni
           yagona tizimda boshqaring. Biznesingizni oson, tez va samarali nazorat qiling.
         </p>
       </div>
-      <div className="flex w-[80%]  justify-between i">
-        <div className="w-[50%] ">
-          <div style={{ width: '100%', height: '560px', position: 'relative' }}>
+
+      {/* CONTENT */}
+      <div
+        className="
+          flex w-[92%] sm:w-[88%] lg:w-[80%]
+          flex-col lg:flex-row
+          items-stretch lg:items-start
+          justify-between gap-[36px] lg:gap-0
+        "
+      >
+        {/* CAROUSEL */}
+        <div className="w-full lg:w-[50%]">
+          <div className="relative w-full h-[380px] sm:h-[460px] lg:h-[560px]">
             <FlexCarousel
               items={items}
               preset="liquid"
@@ -75,9 +103,13 @@ export default function Welcome() {
             />
           </div>
         </div>
-        <div className="flex flex-col w-[40%] gap-[20px]">
-          <h3 className="text-[30px] tracking-[6px]">Lubrix About</h3>
-          <p>
+
+        {/* TEXT */}
+        <div className="flex flex-col w-full lg:w-[40%] gap-[14px] lg:gap-[20px]">
+          <h3 className="text-[22px] tracking-[4px] sm:text-[26px] sm:tracking-[5px] lg:text-[30px] lg:tracking-[6px]">
+            Lubrix About
+          </h3>
+          <p className="text-[14px] sm:text-[15px] lg:text-[16px]">
             Lubrix — moy almashtirish shoxobchalari uchun zamonaviy CRM platformasi. Mijozlar,
             savdo, ombor, moliya va filiallarni yagona tizimda boshqarish imkonini beradi.
             Biznesingizni avtomatlashtiring, vaqtni tejang va samaradorlikni oshiring.

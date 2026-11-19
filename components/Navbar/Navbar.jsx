@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react'
 export default function Navbar() {
   const [active, setActive] = useState(false)
   const [texte, setTexte] = useState(false)
+  const [open, setOpen] = useState(false)
 
   useEffect(() => {
     const handleScroll = () => {
@@ -30,30 +31,131 @@ export default function Navbar() {
       setTexte(currentTheme === 'light')
     }
 
+    const handleResize = () => {
+      handleScroll()
+      // desktop o'lchamga o'tganda mobil menyuni yopamiz
+      if (window.innerWidth >= 1024) setOpen(false)
+    }
+
     handleScroll()
 
     window.addEventListener('scroll', handleScroll, { passive: true })
-    window.addEventListener('resize', handleScroll)
+    window.addEventListener('resize', handleResize)
 
     return () => {
       window.removeEventListener('scroll', handleScroll)
-      window.removeEventListener('resize', handleScroll)
+      window.removeEventListener('resize', handleResize)
     }
   }, [])
+
+  // Mobil menyu ochiq bo'lganda sahifa scroll bo'lmasin, Escape bilan yopilsin
+  useEffect(() => {
+    document.body.style.overflow = open ? 'hidden' : ''
+
+    const onKey = (e) => {
+      if (e.key === 'Escape') setOpen(false)
+    }
+    window.addEventListener('keydown', onKey)
+
+    return () => {
+      document.body.style.overflow = ''
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [open])
 
   const menu = [
     { name: 'Home', link: '#home' },
     { name: 'About', link: '#about' },
-    { name: 'Plans', link: '#plans' },
+    { name: 'Why Us', link: '#why' },
+    { name: 'Benefits', link: '#benefits' },
+    { name: 'Faq', link: '#faq' },
     { name: 'Contact', link: '#contact' },
   ]
 
+  const buttonProps = {
+    size: 'sm',
+    radius: 40,
+    tint: '#ffffff',
+    tintOpacity: 0,
+    textColor: texte ? '#000' : '#fff',
+    lineColor: texte ? '#000' : '#fff',
+    baseColor: '#525252',
+    intensity: 1.9,
+    idleIntensity: 0.55,
+    shineSize: 10,
+    shineFade: 90,
+    thickness: 1.2,
+    glow: 1,
+    followMouse: true,
+    proximity: 250,
+  }
+
   return (
     <div className="fixed top-0 left-0 z-[80] w-full flex justify-center p-[10px]">
+      {/* FULLSCREEN MOBILE MENU */}
+      <div
+        id="mobile-menu"
+        aria-hidden={!open}
+        className={`
+          fixed inset-0 z-0 lg:hidden
+          h-[100dvh] w-full
+          backdrop-blur-2xl backdrop-saturate-150
+          transition-all duration-500 ease-in-out
+          ${texte ? 'bg-white/75 text-black' : 'bg-black/70 text-white'}
+          ${open ? 'opacity-100 visible pointer-events-auto' : 'opacity-0 invisible pointer-events-none'}
+        `}
+      >
+        <div className="flex h-full w-full flex-col justify-between overflow-y-auto px-8 pt-[120px] pb-[calc(2rem+env(safe-area-inset-bottom))]">
+          <nav className="flex flex-col">
+            {menu.map((item, i) => (
+              <a
+                key={item.name}
+                href={item.link}
+                onClick={() => setOpen(false)}
+                style={{ transitionDelay: open ? `${150 + i * 70}ms` : '0ms' }}
+                className={`
+                  border-b border-current/15 py-5 text-4xl font-medium
+                  transition-all duration-500 ease-out
+                  active:opacity-60
+                  ${open ? 'translate-y-0 opacity-100' : 'translate-y-6 opacity-0'}
+                `}
+              >
+                {item.name}
+              </a>
+            ))}
+          </nav>
+
+          <div
+            style={{ transitionDelay: open ? `${150 + menu.length * 70}ms` : '0ms' }}
+            className={`
+              mt-10 flex items-center gap-3
+              transition-all duration-500 ease-out
+              ${open ? 'translate-y-0 opacity-100' : 'translate-y-6 opacity-0'}
+            `}
+          >
+            <Link
+              target="_blank"
+              href="https://app.lubrix.uz/login"
+              onClick={() => setOpen(false)}
+            >
+              <SpecularButton {...buttonProps}>Login</SpecularButton>
+            </Link>
+
+            <Link
+              target="_blank"
+              href="https://app.lubrix.uz/plans"
+              onClick={() => setOpen(false)}
+            >
+              <SpecularButton {...buttonProps}>Sign up</SpecularButton>
+            </Link>
+          </div>
+        </div>
+      </div>
+
       <div
         className={`
-          relative transition-all duration-500 ease-in-out
-          ${active ? 'w-[65%]' : 'w-full'}
+          relative z-10 transition-all duration-500 ease-in-out
+          ${active ? 'w-[94%] md:w-[88%] xl:w-[65%]' : 'w-full'}
         `}
         style={{ height: active ? 76 : 82 }}
       >
@@ -67,7 +169,7 @@ export default function Navbar() {
           blur={11}
           displace={2}
           distortionScale={-180}
-          backgroundOpacity={active ? 0.1 : 0.04}
+          backgroundOpacity={active || open ? 0.1 : 0.04}
           saturation={1.2}
           redOffset={0}
           greenOffset={10}
@@ -78,20 +180,20 @@ export default function Navbar() {
         />
 
         {/* NAVBAR CONTENT */}
-        <div className="absolute inset-0 z-10 flex w-full h-full items-center justify-between px-5">
+        <div className="absolute inset-0 z-10 flex w-full h-full items-center justify-between px-4 sm:px-5">
           {/* LOGO */}
           <Image
             src={texte ? '/Logob.png' : '/logo.png'}
             alt="Lubrix"
             width={180}
             height={40}
-            className="w-[160px] object-contain shrink-0 transition-all duration-500"
+            className="w-[120px] sm:w-[140px] lg:w-[160px] object-contain shrink-0 transition-all duration-500"
           />
 
-          {/* LINKS */}
+          {/* LINKS (desktop) */}
           <nav
             className={`
-              relative z-20 flex items-center gap-7
+              relative z-20 hidden lg:flex items-center gap-7
               whitespace-nowrap transition-colors duration-500
               ${texte ? 'text-black' : 'text-white'}
             `}
@@ -116,52 +218,55 @@ export default function Navbar() {
             ))}
           </nav>
 
-          {/* BUTTONS */}
-          <div className="relative z-20 flex shrink-0 items-center gap-3">
+          {/* BUTTONS (desktop) */}
+          <div className="relative z-20 hidden lg:flex shrink-0 items-center gap-3">
             <Link target="_blank" href="https://app.lubrix.uz/login">
-              <SpecularButton
-                size="sm"
-                radius={40}
-                tint="#ffffff"
-                tintOpacity={0}
-                textColor={texte ? '#000' : '#fff'}
-                lineColor={texte ? '#000' : '#fff'}
-                baseColor="#525252"
-                intensity={1.9}
-                idleIntensity={0.55}
-                shineSize={10}
-                shineFade={90}
-                thickness={1.2}
-                glow={1}
-                followMouse
-                proximity={250}
-              >
-                Login
-              </SpecularButton>
+              <SpecularButton {...buttonProps}>Login</SpecularButton>
             </Link>
 
             <Link target="_blank" href="https://app.lubrix.uz/plans">
-              <SpecularButton
-                size="sm"
-                radius={40}
-                tint="#ffffff"
-                tintOpacity={0}
-                textColor={texte ? '#000' : '#fff'}
-                lineColor={texte ? '#000' : '#fff'}
-                baseColor="#525252"
-                intensity={1.9}
-                idleIntensity={0.55}
-                shineSize={10}
-                shineFade={90}
-                thickness={1.2}
-                glow={1}
-                followMouse
-                proximity={250}
-              >
-                Sign up
-              </SpecularButton>
+              <SpecularButton {...buttonProps}>Sign up</SpecularButton>
             </Link>
           </div>
+
+          {/* HAMBURGER (mobil / planshet) */}
+          <button
+            type="button"
+            aria-label={open ? 'Close menu' : 'Open menu'}
+            aria-expanded={open}
+            aria-controls="mobile-menu"
+            onClick={() => setOpen((v) => !v)}
+            className={`
+              relative z-20 flex lg:hidden shrink-0
+              h-10 w-10 items-center justify-center rounded-full
+              transition-colors duration-500
+              ${texte ? 'text-black' : 'text-white'}
+            `}
+          >
+            <span className="relative block h-[14px] w-[22px]">
+              <span
+                className={`
+                  absolute left-0 h-[1.5px] w-full rounded-full bg-current
+                  transition-all duration-300
+                  ${open ? 'top-[6px] rotate-45' : 'top-0'}
+                `}
+              />
+              <span
+                className={`
+                  absolute left-0 top-[6px] h-[1.5px] w-full rounded-full bg-current
+                  transition-all duration-300
+                  ${open ? 'opacity-0' : 'opacity-100'}
+                `}
+              />
+              <span
+                className={`
+                  absolute left-0 h-[1.5px] w-full rounded-full bg-current
+                  transition-all duration-300
+                  ${open ? 'top-[6px] -rotate-45' : 'top-[12px]'}
+                `}
+              />
+            </span>
+          </button>
         </div>
       </div>
     </div>

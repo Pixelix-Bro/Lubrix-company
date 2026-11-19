@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 
 import { motion, useMotionValueEvent, useScroll, useSpring, useTransform } from 'framer-motion'
 
+import GridBackground from '@/components/ui/GridBackground'
 import {
   ArrowUpRight,
   BarChart3,
@@ -18,7 +19,6 @@ import {
   Users,
   Zap,
 } from 'lucide-react'
-
 // ======================================================
 // LUBRIX — WHITE LUXURY ECOSYSTEM
 // ======================================================
@@ -333,7 +333,7 @@ export default function Features() {
   return (
     <section
       ref={sectionRef}
-      id="features"
+      id="benefits"
       data-theme="light"
       style={{
         height: sectionHeight,
@@ -354,22 +354,10 @@ export default function Features() {
         "
       >
         {/* ==========================================
-            SUBTLE BACKGROUND
+            GRID BACKGROUND
         ========================================== */}
 
-        <div
-          className="
-            pointer-events-none absolute inset-0
-            opacity-[0.018]
-          "
-          style={{
-            backgroundImage: `
-              linear-gradient(#000 1px, transparent 1px),
-              linear-gradient(90deg, #000 1px, transparent 1px)
-            `,
-            backgroundSize: '110px 110px',
-          }}
-        />
+        <GridBackground />
 
         {/* ==========================================
             BRAND INTRO
