@@ -60,7 +60,8 @@ export default function Welcome() {
       data-theme="light"
       className="
       h-[110vh]
-        w-full relative flex flex-col items-center text-black
+
+        w-full relative flex flex-col items-center justify-center text-black
         gap-[40px] sm:gap-[60px] lg:gap-[100px]
         pt-[110px] pb-[50px] lg:pt-0 lg:pb-0
       "
