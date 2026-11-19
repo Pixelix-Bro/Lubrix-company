@@ -1,5 +1,6 @@
 'use client'
 
+import { useLanguage } from '@/lib/i18n'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { ArrowUp, ArrowUpRight } from 'lucide-react'
@@ -8,10 +9,10 @@ import { useEffect, useRef } from 'react'
 gsap.registerPlugin(ScrollTrigger)
 
 const nav = [
-  { label: 'Bosh sahifa', href: '#' },
-  { label: 'Mahsulotlar', href: '#products' },
-  { label: 'Biz haqimizda', href: '#about' },
-  { label: 'Aloqa', href: '#contact' },
+  { labelUz: 'Bosh sahifa', labelEn: 'Home', href: '#' },
+  { labelUz: 'Mahsulotlar', labelEn: 'Products', href: '#benefits' },
+  { labelUz: 'Biz haqimizda', labelEn: 'About us', href: '#about' },
+  { labelUz: 'Aloqa', labelEn: 'Contact', href: '#contact' },
 ]
 
 const socials = [
@@ -23,6 +24,7 @@ const linkClass =
   'group flex w-fit items-center gap-1.5 text-[13px] tracking-[-0.02em] text-neutral-400 transition-colors duration-300 hover:text-white'
 
 export default function Footer() {
+  const { language } = useLanguage()
   const footerRef = useRef(null)
 
   useEffect(() => {
@@ -66,7 +68,9 @@ export default function Footer() {
         <div className="grid grid-cols-2 gap-10 border-b border-neutral-900 py-12 lg:grid-cols-[1.4fr_1fr_1fr_1fr] lg:gap-16 lg:py-14">
           <div className="ft-fade col-span-2 lg:col-span-1">
             <p className="max-w-[260px] text-[13px] leading-[1.8] text-neutral-500">
-              Texnika uchun ishonchli moylash yechimlari. Biz bilan bog‘laning.
+              {language === 'en'
+                ? 'Reliable lubrication solutions for vehicle service. Contact us.'
+                : 'Texnika uchun ishonchli moylash yechimlari. Biz bilan bog‘laning.'}
             </p>
 
             <a
@@ -84,13 +88,13 @@ export default function Footer() {
 
           <div className="ft-fade">
             <h3 className="mb-5 text-[10px] font-medium uppercase tracking-[0.2em] text-neutral-600">
-              Sahifalar
+              {language === 'en' ? 'Pages' : 'Sahifalar'}
             </h3>
             <ul className="flex flex-col gap-3">
-              {nav.map(({ label, href }) => (
-                <li key={label}>
+              {nav.map(({ labelUz, labelEn, href }) => (
+                <li key={href}>
                   <a href={href} className={linkClass}>
-                    {label}
+                    {language === 'en' ? labelEn : labelUz}
                   </a>
                 </li>
               ))}
@@ -99,7 +103,7 @@ export default function Footer() {
 
           <div className="ft-fade">
             <h3 className="mb-5 text-[10px] font-medium uppercase tracking-[0.2em] text-neutral-600">
-              Ijtimoiy
+              {language === 'en' ? 'Social' : 'Ijtimoiy'}
             </h3>
             <ul className="flex flex-col gap-3">
               {socials.map(({ label, href }) => (
@@ -119,7 +123,7 @@ export default function Footer() {
 
           <div className="ft-fade">
             <h3 className="mb-5 text-[10px] font-medium uppercase tracking-[0.2em] text-neutral-600">
-              Aloqa
+              {language === 'en' ? 'Contact' : 'Aloqa'}
             </h3>
             <ul className="flex flex-col gap-3">
               <li>
@@ -134,7 +138,7 @@ export default function Footer() {
                   rel="noreferrer"
                   className={linkClass}
                 >
-                  Namangan, O‘zbekiston
+                  {language === 'en' ? 'Namangan, Uzbekistan' : 'Namangan, O‘zbekiston'}
                 </a>
               </li>
             </ul>
@@ -170,7 +174,7 @@ export default function Footer() {
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
             className="group flex items-center gap-2 uppercase tracking-[0.15em] transition-colors duration-300 hover:text-white"
           >
-            Tepaga
+            {language === 'en' ? 'Back to top' : 'Tepaga'}
             <ArrowUp
               size={12}
               strokeWidth={1.5}

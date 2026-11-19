@@ -1,5 +1,6 @@
 'use client'
 
+import { useLanguage } from '@/lib/i18n'
 import { motion, useMotionValueEvent, useScroll, useTransform } from 'framer-motion'
 import { useEffect, useRef } from 'react'
 
@@ -579,6 +580,7 @@ function createFrameEngine(canvas) {
 }
 
 export default function SectionThree() {
+  const { language } = useLanguage()
   const sectionRef = useRef(null)
   const canvasRef = useRef(null)
   const engineRef = useRef(null)
@@ -638,9 +640,9 @@ export default function SectionThree() {
 
   return (
     <section
-    id="why"
+      id="why"
       ref={sectionRef}
-      aria-label="Lubrix imkoniyatlari"
+      aria-label={language === 'en' ? 'Lubrix capabilities' : 'Lubrix imkoniyatlari'}
       className="relative h-[500vh] bg-[#080808] text-white"
     >
       <div className="sticky top-0 isolate h-[100svh] min-h-[520px] w-full overflow-hidden bg-[#080808]">
@@ -661,14 +663,47 @@ export default function SectionThree() {
           className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-black/[0.06]"
         />
 
-        {features.map((feature, index) => (
-          <AnimatedFeature
-            key={feature.number}
-            feature={feature}
-            index={index}
-            progress={scrollYProgress}
-          />
-        ))}
+        {features.map((feature, index) => {
+          const english = [
+            [
+              'WORKING WITH CUSTOMERS',
+              'Customer management',
+              'Save customer, vehicle, and service history in one system. Track every service delivered to each customer.',
+            ],
+            [
+              'UNIFIED MANAGEMENT',
+              'Branch control',
+              'Manage all your branches, employees, and service processes from one platform. Keep your business in view.',
+            ],
+            [
+              'CLEAR ANALYSIS. RIGHT DECISION.',
+              'Financial analysis',
+              'Track revenue, costs, and profit in clear reports. Make important decisions based on accurate data.',
+            ],
+            [
+              'ARTIFICIAL INTELLIGENCE',
+              'Smart AI assistant',
+              'Analyze information about your business, get fast answers, and simplify daily operations.',
+            ],
+          ]
+          const localized =
+            language === 'en'
+              ? {
+                  ...feature,
+                  eyebrow: english[index][0],
+                  title: english[index][1],
+                  text: english[index][2],
+                }
+              : feature
+          return (
+            <AnimatedFeature
+              key={feature.number}
+              feature={localized}
+              index={index}
+              progress={scrollYProgress}
+            />
+          )
+        })}
 
         <div className="absolute bottom-6 left-6 right-6 z-30 flex items-center justify-between sm:bottom-9 md:bottom-12 md:left-16 md:right-16">
           <div className="flex items-center gap-3 sm:gap-5">
@@ -682,7 +717,7 @@ export default function SectionThree() {
               />
             </div>
             <span className="text-[9px] tracking-[0.2em] text-white/55 sm:text-[10px]">
-              IMKONIYATLAR
+              {language === 'en' ? 'CAPABILITIES' : 'IMKONIYATLAR'}
             </span>
           </div>
         </div>

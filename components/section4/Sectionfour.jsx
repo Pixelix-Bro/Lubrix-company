@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react'
 import { motion, useMotionValueEvent, useScroll, useSpring, useTransform } from 'framer-motion'
 
 import GridBackground from '@/components/ui/GridBackground'
+import { useLanguage } from '@/lib/i18n'
 import {
   ArrowUpRight,
   BarChart3,
@@ -240,6 +241,7 @@ function FeatureCard({ feature, index }) {
 // ======================================================
 
 export default function Features() {
+  const { language } = useLanguage()
   const sectionRef = useRef(null)
   const viewportRef = useRef(null)
   const trackRef = useRef(null)
@@ -401,9 +403,9 @@ export default function Features() {
               sm:text-[14px]
             "
             >
-              Lubrix — moy almashtirish shoxobchalari uchun professional CRM. Barcha
-              filiallaringizni yagona tizimda boshqaring. Biznesingizni oson, tez va samarali
-              nazorat qiling.
+              {language === 'en'
+                ? 'Lubrix is a professional CRM for oil-change centers. Manage all branches in one system and control your business quickly and efficiently.'
+                : 'Lubrix — moy almashtirish shoxobchalari uchun professional CRM. Barcha filiallaringizni yagona tizimda boshqaring. Biznesingizni oson, tez va samarali nazorat qiling.'}
             </p>
           </motion.div>
         </div>
@@ -430,7 +432,7 @@ export default function Features() {
               text-[#A0A0A0]
             "
             >
-              01 — 12 / Our ecosystem
+              {language === 'en' ? '01 — 12 / Our ecosystem' : '01 — 12 / Ekotizimimiz'}
             </span>
 
             <h3
@@ -441,7 +443,7 @@ export default function Features() {
               lg:text-[54px]
             "
             >
-              Barcha imkoniyatlar.
+              {language === 'en' ? 'All capabilities.' : 'Barcha imkoniyatlar.'}
             </h3>
           </div>
 
@@ -452,8 +454,9 @@ export default function Features() {
             text-[#888888]
           "
           >
-            Biznesingizni rivojlantirish uchun kerak bo‘lgan barcha vositalar. Bitta mukammal
-            platformada.
+            {language === 'en'
+              ? 'All the tools you need to grow your business. In one complete platform.'
+              : 'Biznesingizni rivojlantirish uchun kerak bo‘lgan barcha vositalar. Bitta mukammal platformada.'}
           </p>
         </div>
 
@@ -479,9 +482,60 @@ export default function Features() {
               will-change-transform
             "
           >
-            {features.map((feature, index) => (
-              <FeatureCard key={feature.number} feature={feature} index={index} />
-            ))}
+            {features.map((feature, index) => {
+              const en = [
+                [
+                  'Management',
+                  'Smart management',
+                  'Manage every business process in one platform.',
+                ],
+                [
+                  'Analytics',
+                  'Real-time statistics',
+                  'Track revenue, costs, and business KPIs in real time.',
+                ],
+                ['CRM', 'Customer database', 'Manage customers, vehicles, and service history.'],
+                ['Inventory', 'Inventory control', 'Monitor stock levels and stock movements.'],
+                ['Performance', 'Fast service', 'Simplify and accelerate service operations.'],
+                ['Security', 'Secure system', 'Use tools designed to protect your data.'],
+                [
+                  'Finance',
+                  'Payment control',
+                  'Track financial transactions and payments in one place.',
+                ],
+                [
+                  'Team',
+                  'Employee management',
+                  'Manage your team, tasks, and workflows efficiently.',
+                ],
+                [
+                  'Notifications',
+                  'Automatic reminders',
+                  'Stay informed about important tasks and processes.',
+                ],
+                ['Responsive', 'Every device', 'Use it from a computer, tablet, or smartphone.'],
+                [
+                  'Monitoring',
+                  'Fast monitoring',
+                  'Continuously monitor operations and service status.',
+                ],
+                [
+                  'Cloud System',
+                  'Cloud infrastructure',
+                  'Access your data from anywhere with internet access.',
+                ],
+              ]
+              const localized =
+                language === 'en'
+                  ? {
+                      ...feature,
+                      category: en[index][0],
+                      title: en[index][1],
+                      description: en[index][2],
+                    }
+                  : feature
+              return <FeatureCard key={feature.number} feature={localized} index={index} />
+            })}
           </motion.div>
         </div>
 

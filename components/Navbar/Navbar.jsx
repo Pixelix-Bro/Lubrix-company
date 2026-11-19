@@ -2,6 +2,7 @@
 
 import GlassSurface from '@/components/GlassSurface'
 import SpecularButton from '@/components/ui/SpecularButton'
+import { useLanguage } from '@/lib/i18n'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
@@ -10,6 +11,7 @@ export default function Navbar() {
   const [active, setActive] = useState(false)
   const [texte, setTexte] = useState(false)
   const [open, setOpen] = useState(false)
+  const { language, setLanguage } = useLanguage()
 
   useEffect(() => {
     const handleScroll = () => {
@@ -63,14 +65,24 @@ export default function Navbar() {
     }
   }, [open])
 
-  const menu = [
-    { name: 'Home', link: '#home' },
-    { name: 'About', link: '#about' },
-    { name: 'Why Us', link: '#why' },
-    { name: 'Benefits', link: '#benefits' },
-    { name: 'Faq', link: '#faq' },
-    { name: 'Contact', link: '#contact' },
-  ]
+  const menu =
+    language === 'en'
+      ? [
+          { name: 'Home', link: '#home' },
+          { name: 'About', link: '#about' },
+          { name: 'Why Us', link: '#why' },
+          { name: 'Benefits', link: '#benefits' },
+          { name: 'FAQ', link: '#faq' },
+          { name: 'Contact', link: '#contact' },
+        ]
+      : [
+          { name: 'Bosh', link: '#home' },
+          { name: 'Biz haqimiz', link: '#about' },
+          { name: 'Afzalliklar', link: '#why' },
+          { name: 'Imtiyozlar', link: '#benefits' },
+          { name: 'FAQ', link: '#faq' },
+          { name: 'Aloqa', link: '#contact' },
+        ]
 
   const buttonProps = {
     size: 'sm',
@@ -133,20 +145,25 @@ export default function Navbar() {
               ${open ? 'translate-y-0 opacity-100' : 'translate-y-6 opacity-0'}
             `}
           >
-            <Link
-              target="_blank"
-              href="https://app.lubrix.uz/login"
-              onClick={() => setOpen(false)}
+            <button
+              type="button"
+              aria-label={language === 'en' ? 'Switch to Uzbek' : 'Switch to English'}
+              onClick={() => setLanguage(language === 'en' ? 'uz' : 'en')}
+              className="h-11 rounded-full border border-current/20 px-4 text-sm font-medium"
             >
-              <SpecularButton {...buttonProps}>Login</SpecularButton>
+              {language === 'en' ? 'UZ' : 'EN'}
+            </button>
+
+            <Link target="_blank" href="https://app.lubrix.uz/login" onClick={() => setOpen(false)}>
+              <SpecularButton {...buttonProps}>
+                {language === 'en' ? 'Log in' : 'Kirish'}
+              </SpecularButton>
             </Link>
 
-            <Link
-              target="_blank"
-              href="https://app.lubrix.uz/plans"
-              onClick={() => setOpen(false)}
-            >
-              <SpecularButton {...buttonProps}>Sign up</SpecularButton>
+            <Link target="_blank" href="https://app.lubrix.uz/plans" onClick={() => setOpen(false)}>
+              <SpecularButton {...buttonProps}>
+                {language === 'en' ? 'Sign up' : "Ro'yxatdan o'tish"}
+              </SpecularButton>
             </Link>
           </div>
         </div>
@@ -219,20 +236,41 @@ export default function Navbar() {
           </nav>
 
           {/* BUTTONS (desktop) */}
-          <div className="relative z-20 hidden lg:flex shrink-0 items-center gap-3">
+          <div className="relative z-20 hidden lg:flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              aria-label={language === 'en' ? 'Switch to Uzbek' : 'Switch to English'}
+              onClick={() => setLanguage(language === 'en' ? 'uz' : 'en')}
+              className={`h-10 min-w-10 rounded-full border px-3 text-xs font-semibold transition-opacity hover:opacity-70 ${texte ? 'border-black/20 text-black' : 'border-white/20 text-white'}`}
+            >
+              {language === 'en' ? 'UZ' : 'EN'}
+            </button>
+
             <Link target="_blank" href="https://app.lubrix.uz/login">
-              <SpecularButton {...buttonProps}>Login</SpecularButton>
+              <SpecularButton {...buttonProps}>
+                {language === 'en' ? 'Log in' : 'Kirish'}
+              </SpecularButton>
             </Link>
 
             <Link target="_blank" href="https://app.lubrix.uz/plans">
-              <SpecularButton {...buttonProps}>Sign up</SpecularButton>
+              <SpecularButton {...buttonProps}>
+                {language === 'en' ? 'Sign up' : "Ro'yxatdan o'tish"}
+              </SpecularButton>
             </Link>
           </div>
 
           {/* HAMBURGER (mobil / planshet) */}
           <button
             type="button"
-            aria-label={open ? 'Close menu' : 'Open menu'}
+            aria-label={
+              open
+                ? language === 'en'
+                  ? 'Close menu'
+                  : 'Menyuni yopish'
+                : language === 'en'
+                  ? 'Open menu'
+                  : 'Menyuni ochish'
+            }
             aria-expanded={open}
             aria-controls="mobile-menu"
             onClick={() => setOpen((v) => !v)}

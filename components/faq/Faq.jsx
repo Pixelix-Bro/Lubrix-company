@@ -7,6 +7,7 @@ import { ArrowUpRight, Plus } from 'lucide-react'
 
 import GlassSurface from '@/components/GlassSurface'
 import BlackBackground from '@/components/ui/BlackBackground'
+import { useLanguage } from '@/lib/i18n'
 
 // ======================================================
 // LUBRIX — FAQ (DARK, PREMIUM)
@@ -51,15 +52,16 @@ const FAQ_DATA = [
 ]
 
 // Google qidiruvida FAQ ko‘rinishi uchun (SEO)
-const FAQ_JSON_LD = JSON.stringify({
-  '@context': 'https://schema.org',
-  '@type': 'FAQPage',
-  mainEntity: FAQ_DATA.map((item) => ({
-    '@type': 'Question',
-    name: item.question,
-    acceptedAnswer: { '@type': 'Answer', text: item.answer },
-  })),
-}).replace(/</g, '\\u003c')
+const makeFaqJsonLd = (items) =>
+  JSON.stringify({
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: items.map((item) => ({
+      '@type': 'Question',
+      name: item.question,
+      acceptedAnswer: { '@type': 'Answer', text: item.answer },
+    })),
+  }).replace(/</g, '\\u003c')
 
 const EASE = [0.22, 1, 0.36, 1]
 const pad = (n) => String(n).padStart(2, '0')
@@ -83,7 +85,10 @@ function FaqItem({ item, index, isOpen, onToggle }) {
   }
 
   return (
-    <li onPointerMove={handlePointerMove} className="group/item relative border-b backdrop-blur-3xl rounded-[50px] p-[20px] overflow-hidden border-white/10">
+    <li
+      onPointerMove={handlePointerMove}
+      className="group/item relative border-b backdrop-blur-3xl rounded-[50px] p-[20px] overflow-hidden border-white/10"
+    >
       {/* Spotlight */}
       <div
         aria-hidden="true"
@@ -190,10 +195,25 @@ function FaqItem({ item, index, isOpen, onToggle }) {
 // ======================================================
 
 export default function FAQ() {
+  const { language } = useLanguage()
   const [openId, setOpenId] = useState(FAQ_DATA[0].id)
   const listRef = useRef(null)
 
   const openIndex = FAQ_DATA.findIndex((item) => item.id === openId)
+
+  const english = [
+    ['Platform', 'What is Lubrix CRM and how does it work?', 'Lubrix is a modern management system designed for oil-change centers and auto services. It brings customers, vehicles, services, inventory, finance, and business processes into one platform.'],
+    ['Customers', 'Can I save customer and vehicle history?', 'Yes. You can store information about each customer and vehicle, and track previous visits, completed services, and maintenance history.'],
+    ['Services', 'How does the 15-point inspection system work?', 'You can record 15 important inspection points during the vehicle service process. It helps monitor vehicle condition systematically and gives the customer clear information.'],
+    ['Management', 'Can I manage multiple branches in one system?', 'Yes. You can manage branch operations in one system, monitor their workflows, and oversee the whole business centrally.'],
+    ['AI Assistant', 'How does the Lubrix AI Assistant help?', 'The AI Assistant supports your daily business workflows. It helps you find useful information and simplify operations using data from the system.'],
+  ]
+
+  const localizedFaq = FAQ_DATA.map((item, index) =>
+    language === 'en'
+      ? { ...item, category: english[index][0], question: english[index][1], answer: english[index][2] }
+      : item
+  )
 
   const toggle = (id) => setOpenId((current) => (current === id ? null : id))
 
@@ -238,7 +258,10 @@ export default function FAQ() {
           className="pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-[#050505] to-transparent"
         />
 
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: FAQ_JSON_LD }} />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: makeFaqJsonLd(localizedFaq) }}
+        />
 
         <div className="relative z-10 mx-auto grid w-full max-w-[1500px] gap-14 px-6 sm:px-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-24 lg:px-16">
           {/* ==========================================
@@ -256,13 +279,13 @@ export default function FAQ() {
               id="faq-heading"
               className="text-[38px] font-normal leading-[1.05] tracking-[-0.06em] sm:text-[50px] lg:text-[64px]"
             >
-              Ko‘p so‘raladigan
-              <br />
-              savollar.
+              {language === 'en' ? 'Frequently asked questions.' : 'Ko‘p so‘raladigan savollar.'}
             </h2>
 
             <p className="mt-6 max-w-[340px] text-[14px] leading-[1.9] text-white/50">
-              Lubrix haqida eng muhim savollarga qisqa va aniq javoblar.
+              {language === 'en'
+                ? 'Short, clear answers to the most important questions about Lubrix.'
+                : 'Lubrix haqida eng muhim savollarga qisqa va aniq javoblar.'}
             </p>
 
             {/* Jonli hisoblagich: qaysi savol ochiq */}
@@ -308,7 +331,7 @@ export default function FAQ() {
               href="#contact"
               className={`group mt-10 inline-flex items-center gap-2 rounded-full bg-white px-6 py-3.5 text-[13px] font-medium text-black transition-all duration-300 hover:gap-3 hover:opacity-90 ${focusRing}`}
             >
-              Boshqa savolingiz bormi?
+              {language === 'en' ? 'Have another question?' : 'Boshqa savolingiz bormi?'}
               <ArrowUpRight
                 size={16}
                 strokeWidth={1.5}
@@ -331,15 +354,53 @@ export default function FAQ() {
             transition={{ duration: 0.85, ease: EASE }}
             className="border-t flex flex-col gap-[20px] border-white/10"
           >
-            {FAQ_DATA.map((item, index) => (
-              <FaqItem
-                key={item.id}
-                item={item}
-                index={index}
-                isOpen={openId === item.id}
-                onToggle={() => toggle(item.id)}
-              />
-            ))}
+            {FAQ_DATA.map((item, index) => {
+              const english = [
+                [
+                  'Platform',
+                  'What is Lubrix CRM and how does it work?',
+                  'Lubrix is a modern management system designed for oil-change centers and auto services. It brings customers, vehicles, services, inventory, finance, and business processes into one platform.',
+                ],
+                [
+                  'Customers',
+                  'Can I save customer and vehicle history?',
+                  'Yes. You can store information about each customer and vehicle, and track previous visits, completed services, and maintenance history.',
+                ],
+                [
+                  'Services',
+                  'How does the 15-point inspection system work?',
+                  'You can record 15 important inspection points during the vehicle service process. It helps monitor vehicle condition systematically and gives the customer clear information.',
+                ],
+                [
+                  'Management',
+                  'Can I manage multiple branches in one system?',
+                  'Yes. You can manage branch operations in one system, monitor their workflows, and oversee the whole business centrally.',
+                ],
+                [
+                  'AI Assistant',
+                  'How does the Lubrix AI Assistant help?',
+                  'The AI Assistant supports your daily business workflows. It helps you find useful information and simplify operations using data from the system.',
+                ],
+              ]
+              const localized =
+                language === 'en'
+                  ? {
+                      ...item,
+                      category: english[index][0],
+                      question: english[index][1],
+                      answer: english[index][2],
+                    }
+                  : item
+              return (
+                <FaqItem
+                  key={item.id}
+                  item={localized}
+                  index={index}
+                  isOpen={openId === item.id}
+                  onToggle={() => toggle(item.id)}
+                />
+              )
+            })}
           </motion.ul>
         </div>
       </section>

@@ -1,6 +1,7 @@
 import Navbar from '@/components/Navbar/Navbar'
 import SmoothScroll from '@/components/SmoothScroll'
 import CustomIntro from '@/components/Start'
+import { LanguageProvider } from '@/lib/i18n'
 
 import '@designcodeio/threeui/style.css'
 import 'lenis/dist/lenis.css'
@@ -156,7 +157,6 @@ export const metadata = {
   referrer: 'strict-origin-when-cross-origin',
 }
 
-
 export const viewport = {
   width: 'device-width',
   initialScale: 1,
@@ -164,16 +164,17 @@ export const viewport = {
   themeColor: '#000000',
 }
 
-
 export default function RootLayout({ children }) {
   return (
     <html lang="uz" className="h-full antialiased">
       <body className="min-h-screen flex flex-col ">
-        <CustomIntro />
+        <LanguageProvider>
+          <CustomIntro />
 
-        <Navbar />
+          <Navbar />
 
-        <SmoothScroll>{children}</SmoothScroll>
+          <SmoothScroll>{children}</SmoothScroll>
+        </LanguageProvider>
       </body>
     </html>
   )

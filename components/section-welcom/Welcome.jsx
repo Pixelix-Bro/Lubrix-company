@@ -1,37 +1,57 @@
+'use client'
+
 import FlexCarousel from '@/components/ui/FlexCarousel'
-import GridBackground from '@/components/ui/GridBackground';
+import GridBackground from '@/components/ui/GridBackground'
+import { useLanguage } from '@/lib/i18n'
 
 export default function Welcome() {
+  const { language } = useLanguage()
   const items = [
     {
       src: '/allbum/album1.avif',
-      alt: 'Lubrix CRM boshqaruv paneli',
-      title: 'Aqlli boshqaruv',
-      subtitle: 'Biznesingizni yagona tizimda boshqaring',
+      alt: language === 'en' ? 'Lubrix CRM dashboard' : 'Lubrix CRM boshqaruv paneli',
+      title: language === 'en' ? 'Smart management' : 'Aqlli boshqaruv',
+      subtitle:
+        language === 'en'
+          ? 'Manage your business in one system'
+          : 'Biznesingizni yagona tizimda boshqaring',
     },
     {
       src: '/allbum/album2.avif',
-      alt: 'Lubrix mijozlar va avtomobillar boshqaruvi',
-      title: 'Mijozlar tajribasi',
-      subtitle: 'Har bir mijoz biz uchun muhim',
+      alt:
+        language === 'en'
+          ? 'Lubrix customer and vehicle management'
+          : 'Lubrix mijozlar va avtomobillar boshqaruvi',
+      title: language === 'en' ? 'Customer experience' : 'Mijozlar tajribasi',
+      subtitle: language === 'en' ? 'Every customer matters' : 'Har bir mijoz biz uchun muhim',
     },
     {
       src: '/allbum/album3.avif',
-      alt: 'Lubrix ombor va mahsulotlar nazorati',
-      title: 'Ombor nazorati',
-      subtitle: 'Mahsulotlarni to‘liq boshqarish',
+      alt: language === 'en' ? 'Lubrix inventory control' : 'Lubrix ombor va mahsulotlar nazorati',
+      title: language === 'en' ? 'Inventory control' : 'Ombor nazorati',
+      subtitle:
+        language === 'en' ? 'Manage products completely' : 'Mahsulotlarni to‘liq boshqarish',
     },
     {
       src: '/allbum/album4.avif',
-      alt: 'Lubrix moliyaviy tahlil va savdo statistikasi',
-      title: 'Biznes tahlili',
-      subtitle: 'Rivojlanish uchun aniq ma’lumotlar',
+      alt:
+        language === 'en'
+          ? 'Lubrix finance analysis and sales statistics'
+          : 'Lubrix moliyaviy tahlil va savdo statistikasi',
+      title: language === 'en' ? 'Business analytics' : 'Biznes tahlili',
+      subtitle: language === 'en' ? 'Clear data for growth' : 'Rivojlanish uchun aniq ma’lumotlar',
     },
     {
       src: '/allbum/album5.avif',
-      alt: 'Lubrix sun’iy intellekt yordamchisi',
-      title: 'Sun’iy intellekt',
-      subtitle: 'Biznes boshqaruvining yangi davri',
+      alt:
+        language === 'en'
+          ? 'Lubrix artificial intelligence assistant'
+          : 'Lubrix sun’iy intellekt yordamchisi',
+      title: language === 'en' ? 'Artificial intelligence' : 'Sun’iy intellekt',
+      subtitle:
+        language === 'en'
+          ? 'A new era of business management'
+          : 'Biznes boshqaruvining yangi davri',
     },
   ]
   return (
@@ -39,13 +59,13 @@ export default function Welcome() {
       id="about"
       data-theme="light"
       className="
-      h-[100vh]
+      h-[110vh]
         w-full relative flex flex-col items-center text-black
         gap-[40px] sm:gap-[60px] lg:gap-[100px]
         pt-[110px] pb-[50px] lg:pt-0 lg:pb-0
       "
     >
-      <GridBackground/>
+      <GridBackground />
       {/* HEAD */}
       <div className="head w-full items-center mt-[20px] flex flex-col gap-[16px] lg:gap-[20px] justify-center px-5">
         <h2
@@ -59,8 +79,9 @@ export default function Welcome() {
           Lubrix
         </h2>
         <p className="w-full max-w-2xl text-[14px] sm:text-[15px] lg:text-[16px] text-center">
-          Lubrix — moy almashtirish shoxobchalari uchun professional CRM. Barcha filiallaringizni
-          yagona tizimda boshqaring. Biznesingizni oson, tez va samarali nazorat qiling.
+          {language === 'en'
+            ? 'Lubrix is a professional CRM for oil-change centers. Manage all branches in one system and control your business quickly and efficiently.'
+            : 'Lubrix — moy almashtirish shoxobchalari uchun professional CRM. Barcha filiallaringizni yagona tizimda boshqaring. Biznesingizni oson, tez va samarali nazorat qiling.'}
         </p>
       </div>
 
@@ -74,7 +95,7 @@ export default function Welcome() {
         "
       >
         {/* CAROUSEL */}
-        <div className="w-full lg:w-[50%]">
+        <div className="w-full lg:w-[50%] ">
           <div className="relative w-full h-[380px] sm:h-[460px] lg:h-[560px]">
             <FlexCarousel
               items={items}
@@ -107,12 +128,12 @@ export default function Welcome() {
         {/* TEXT */}
         <div className="flex flex-col w-full lg:w-[40%] gap-[14px] lg:gap-[20px]">
           <h3 className="text-[22px] tracking-[4px] sm:text-[26px] sm:tracking-[5px] lg:text-[30px] lg:tracking-[6px]">
-            Lubrix About
+            {language === 'en' ? 'About Lubrix' : 'Lubrix haqida'}
           </h3>
           <p className="text-[14px] sm:text-[15px] lg:text-[16px]">
-            Lubrix — moy almashtirish shoxobchalari uchun zamonaviy CRM platformasi. Mijozlar,
-            savdo, ombor, moliya va filiallarni yagona tizimda boshqarish imkonini beradi.
-            Biznesingizni avtomatlashtiring, vaqtni tejang va samaradorlikni oshiring.
+            {language === 'en'
+              ? 'Lubrix is a modern CRM platform for oil-change centers. Manage customers, sales, inventory, finance, and branches in one system. Automate your business, save time, and improve efficiency.'
+              : 'Lubrix — moy almashtirish shoxobchalari uchun zamonaviy CRM platformasi. Mijozlar, savdo, ombor, moliya va filiallarni yagona tizimda boshqarish imkonini beradi. Biznesingizni avtomatlashtiring, vaqtni tejang va samaradorlikni oshiring.'}
           </p>
         </div>
       </div>

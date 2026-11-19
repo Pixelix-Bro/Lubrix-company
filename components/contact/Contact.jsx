@@ -1,6 +1,7 @@
 'use client'
 
 import GridBackground from '@/components/ui/GridBackground'
+import { useLanguage } from '@/lib/i18n'
 import { gsap } from 'gsap'
 import { ArrowUpRight, Mail, MapPin, Phone, Send } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
@@ -38,6 +39,7 @@ const INPUT_CLASS =
   'w-full rounded-[13px] border border-white/70 bg-white/45 px-4 py-[15px] text-[13px] text-[#171717] outline-none shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] backdrop-blur-xl transition-all duration-300 placeholder:text-neutral-400 hover:border-black/15 hover:bg-white/65 focus:border-black/25 focus:bg-white/85 focus:shadow-[0_0_0_3px_rgba(0,0,0,0.035),inset_0_1px_0_rgba(255,255,255,0.9)]'
 
 export default function Contact() {
+  const { language } = useLanguage()
   const sectionRef = useRef(null)
 
   const [form, setForm] = useState(INITIAL_FORM)
@@ -102,22 +104,36 @@ export default function Contact() {
     const message = form.message.trim()
 
     if (!name || !email || !message) {
-      setStatus('Iltimos, barcha maydonlarni to‘ldiring.')
+      setStatus(
+        language === 'en' ? 'Please fill in all fields.' : 'Iltimos, barcha maydonlarni to‘ldiring.'
+      )
       return
     }
 
     if (name.length < 2 || message.length < 5) {
-      setStatus('Ma’lumotlarni to‘g‘ri kiriting.')
+      setStatus(
+        language === 'en' ? 'Please enter valid information.' : 'Ma’lumotlarni to‘g‘ri kiriting.'
+      )
       return
     }
 
-    const subject = encodeURIComponent(`Lubrix — yangi murojaat: ${name}`)
+    const subject = encodeURIComponent(
+      language === 'en' ? `Lubrix — new inquiry: ${name}` : `Lubrix — yangi murojaat: ${name}`
+    )
 
-    const body = encodeURIComponent(`Ism: ${name}\nEmail: ${email}\n\nXabar:\n${message}`)
+    const body = encodeURIComponent(
+      language === 'en'
+        ? `Name: ${name}\nEmail: ${email}\n\nMessage:\n${message}`
+        : `Ism: ${name}\nEmail: ${email}\n\nXabar:\n${message}`
+    )
 
     const mailto = `mailto:hello@lubrix.uz?subject=${subject}&body=${body}`
 
-    setStatus('Email dasturingizda xabar tayyorlanmoqda.')
+    setStatus(
+      language === 'en'
+        ? 'Preparing your message in the email app.'
+        : 'Email dasturingizda xabar tayyorlanmoqda.'
+    )
 
     window.location.href = mailto
   }
@@ -151,14 +167,15 @@ export default function Contact() {
               id="contact-title"
               className="contact-reveal max-w-[750px] text-[clamp(3.3rem,7vw,4.3rem)] font-medium leading-[0.94] tracking-[-0.085em]"
             >
-              Har bir yaxshi g‘oya
-              <br />
-              <span className="text-[#bdbdb8]">suhbatdan.</span>
+              {language === 'en'
+                ? 'Every great idea starts with a conversation.'
+                : 'Har bir yaxshi g‘oya suhbatdan boshlanadi.'}
             </h1>
 
             <p className="contact-reveal mt-8 max-w-[370px] text-[13px] leading-[1.9] text-neutral-500 sm:text-[14px]">
-              Biznesingizni yangi bosqichga olib chiqish haqida gaplashamiz. Savollaringiz va
-              takliflaringizni kutamiz.
+              {language === 'en'
+                ? 'Let’s discuss taking your business to the next level. We look forward to your questions and proposals.'
+                : 'Biznesingizni yangi bosqichga olib chiqish haqida gaplashamiz. Savollaringiz va takliflaringizni kutamiz.'}
             </p>
 
             {/* Contact details */}
@@ -186,11 +203,19 @@ export default function Contact() {
 
                       <div>
                         <span className="mb-1 block text-[8px] font-semibold tracking-[0.18em] text-neutral-400">
-                          {item.label}
+                          {language === 'en'
+                            ? item.label === 'TELEFON'
+                              ? 'PHONE'
+                              : item.label === 'MANZIL'
+                                ? 'ADDRESS'
+                                : item.label
+                            : item.label}
                         </span>
 
                         <span className="block text-[12px] font-medium tracking-[-0.02em] text-neutral-800 sm:text-[13px]">
-                          {item.value}
+                          {language === 'en' && item.label === 'MANZIL'
+                            ? 'Tashkent, Uzbekistan'
+                            : item.value}
                         </span>
                       </div>
                     </div>
@@ -237,13 +262,11 @@ export default function Contact() {
               <div className="pointer-events-none absolute -right-24 -top-32 h-72 w-72 rounded-full border border-white/50 bg-white/15 blur-2xl" />
 
               <div className="relative z-10">
-
-
                 <form onSubmit={handleSubmit} className="flex flex-col gap-6">
                   {/* Name */}
                   <label className="block">
                     <span className="mb-2.5 block pl-1 text-[10px] font-medium text-neutral-600">
-                      Ismingiz
+                      {language === 'en' ? 'Your name' : 'Ismingiz'}
                     </span>
 
                     <input
@@ -255,7 +278,7 @@ export default function Contact() {
                       maxLength={80}
                       value={form.name}
                       onChange={updateField}
-                      placeholder="Ismingizni kiriting"
+                      placeholder={language === 'en' ? 'Enter your name' : 'Ismingizni kiriting'}
                       className={INPUT_CLASS}
                     />
                   </label>
@@ -263,7 +286,7 @@ export default function Contact() {
                   {/* Email */}
                   <label className="block">
                     <span className="mb-2.5 block pl-1 text-[10px] font-medium text-neutral-600">
-                      Elektron pochta
+                      {language === 'en' ? 'Email address' : 'Elektron pochta'}
                     </span>
 
                     <input
@@ -282,7 +305,7 @@ export default function Contact() {
                   {/* Message */}
                   <label className="block">
                     <span className="mb-2.5 block pl-1 text-[10px] font-medium text-neutral-600">
-                      Xabaringiz
+                      {language === 'en' ? 'Your message' : 'Xabaringiz'}
                     </span>
 
                     <textarea
@@ -293,7 +316,11 @@ export default function Contact() {
                       rows={3}
                       value={form.message}
                       onChange={updateField}
-                      placeholder="Loyihangiz haqida yozing..."
+                      placeholder={
+                        language === 'en'
+                          ? 'Tell us about your project...'
+                          : 'Loyihangiz haqida yozing...'
+                      }
                       className={`${INPUT_CLASS} min-h-[112px] resize-none leading-6`}
                     />
 
@@ -308,7 +335,7 @@ export default function Contact() {
                       type="submit"
                       className="group inline-flex h-[50px] w-full items-center justify-between rounded-full bg-[#111] pl-6 pr-2 text-[10px] font-medium tracking-wide text-white shadow-[0_8px_25px_rgba(0,0,0,0.12)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-neutral-700 hover:shadow-[0_12px_30px_rgba(0,0,0,0.16)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-black active:scale-[0.99]"
                     >
-                      Yuborish
+                      {language === 'en' ? 'Send' : 'Yuborish'}
                       <span className="flex h-[36px] w-[36px] items-center justify-center rounded-full bg-white/[0.14] transition-transform duration-300 group-hover:rotate-45">
                         <ArrowUpRight size={15} strokeWidth={1.5} />
                       </span>
@@ -330,7 +357,9 @@ export default function Contact() {
                   <Send size={13} strokeWidth={1.5} className="text-neutral-400" />
 
                   <span className="text-[9px] tracking-wide text-neutral-500">
-                    Sizning g‘oyangiz biz uchun muhim.
+                    {language === 'en'
+                      ? 'Your idea matters to us.'
+                      : 'Sizning g‘oyangiz biz uchun muhim.'}
                   </span>
                 </div>
               </div>

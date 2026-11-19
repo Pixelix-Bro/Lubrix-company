@@ -2,13 +2,20 @@
 
 import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect, useState } from 'react'
+import { useLanguage } from '@/lib/i18n'
 
-const words = ['XUSH KELIBSIZ!', 'Bu — LUBRIX.', 'Biznesingiz uchun aqlli boshqaruv.']
 export default function CustomIntro() {
+  const { language } = useLanguage()
   const [index, setIndex] = useState(0)
   const [finished, setFinished] = useState(false)
 
+  const words =
+    language === 'en'
+      ? ['WELCOME!', 'This is LUBRIX.', 'Smart management for your business.']
+      : ['XUSH KELIBSIZ!', 'Bu — LUBRIX.', 'Biznesingiz uchun aqlli boshqaruv.']
+
   useEffect(() => {
+    setIndex(0)
     const timers = []
 
     words.forEach((_, i) => {
