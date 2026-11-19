@@ -22,7 +22,7 @@ export default function CustomIntro() {
         } else {
           setIndex(i + 1)
         }
-      }, i * 3500)
+      }, i * 3000)
 
       timers.push(timer)
     })
