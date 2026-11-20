@@ -165,7 +165,7 @@ export default function Contact() {
           <div className="flex flex-col w-full">
             <h1
               id="contact-title"
-              className="contact-reveal max-w-[750px] text-[clamp(3.3rem,7vw,4.3rem)] font-medium leading-[0.94] tracking-[-0.085em]"
+              className="contact-reveal max-w-[750px] text-[clamp(3.3rem,7vw,3.3rem)] font-medium leading-[0.94] tracking-[-0.085em]"
             >
               {language === 'en'
                 ? 'Every great idea starts with a conversation.'
